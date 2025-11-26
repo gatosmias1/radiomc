@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RadioMC - Sua Rádio Musical</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Poppins', sans-serif;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2), 0 0 40px rgba(0, 255, 255, 0.05);
+        }
+        
+        .drop-zone {
+            border: 3px dashed rgba(0, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: #00ffff;
+            background: rgba(0, 255, 255, 0.1);
+            transform: scale(1.01);
+        }
+        
+        .music-item {
+            transition: all 0.2s ease;
+        }
+        
+        .music-item:hover {
+            background: rgba(0, 255, 255, 0.15);
+        }
+        
+        .music-item.playing {
+            background: rgba(0, 255, 255, 0.25);
+            border-left: 4px solid #00ffff;
+        }
+        
+        .control-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.1);
+            color: #00ffff;
+        }
+        
+        .control-btn.active {
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            height: 6px;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinning {
+            animation: spin 3s linear infinite;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.4);
+            border-radius: 3px;
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top: 3px solid #00ffff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.success { background: linear-gradient(135deg, #00b894, #00cec9); }
+        .toast.error { background: linear-gradient(135deg, #d63031, #e17055); }
+        .toast.info { background: linear-gradient(135deg, #0984e3, #74b9ff); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .play-btn-main {
+            background: linear-gradient(135deg, #00d9ff, #a855f7);
+            transition: all 0.3s ease;
+        }
+        
+        .play-btn-main:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+        }
+
+        .equalizer {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 20px;
+        }
+
+        .equalizer span {
+            width: 4px;
+            background: linear-gradient(to top, #00ffff, #a855f7);
+            border-radius: 2px;
+            animation: equalize 0.5s ease-in-out infinite alternate;
+        }
+
+        .equalizer span:nth-child(1) { animation-delay: 0s; }
+        .equalizer span:nth-child(2) { animation-delay: 0.1s; }
+        .equalizer span:nth-child(3) { animation-delay: 0.2s; }
+        .equalizer span:nth-child(4) { animation-delay: 0.3s; }
+
+        @keyframes equalize {
+            0% { height: 5px; }
+            100% { height: 20px; }
+        }
+
+        .viz-bar {
+            transition: height 0.1s ease;
+        }
+    </style>
+</head>
+<body class="text-white p-3 md:p-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <i class="fas fa-broadcast-tower mr-2"></i>RadioMC
+            </h1>
+            <p class="text-gray-400 mt-1 text-sm">Sua biblioteca musical personalizada</p>
+            <p id="storageStatus" class="text-xs text-cyan-400 mt-1"></p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+            <!-- Coluna Esquerda -->
+            <div class="lg:col-span-2 space-y-4">
+                <!-- Upload -->
+                <div class="glass rounded-2xl p-4 md:p-6 neon-glow">
+                    <h2 class="text-lg font-semibold mb-3 flex items-center">
+                        <i class="fas fa-cloud-upload-alt mr-2 text-cyan-400"></i>
+                        Adicionar Músicas
+                    </h2>
+                    <div id="dropZone" class="drop-zone rounded-xl p-6 md:p-8 text-center cursor-pointer">
+                        <i class="fas fa-music text-4xl md:text-5xl text-cyan-400 mb-3"></i>
+                        <p class="text-base md:text-lg">Arraste músicas aqui</p>
+                        <p class="text-gray-400 text-sm mt-1">ou clique para selecionar</p>
+                        <p class="text-gray-500 text-xs mt-2">MP3, WAV, OGG, M4A, FLAC</p>
+                        <input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac" class="hidden">
+                    </div>
+                    <div id="uploadProgress" class="hidden mt-4">
+                        <div class="flex items-center gap-3">
+                            <div class="loading-spinner"></div>
+                            <span id="uploadText" class="text-sm">Processando...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biblioteca -->
+                <div class="glass rounded-2xl p-4 md:p-6 neon-glow">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+                        <h2 class="text-lg font-semibold flex items-center">
+                            <i class="fas fa-compact-disc mr-2 text-purple-400"></i>
+                            Biblioteca
+                            <span id="musicCount" class="ml-2 text-xs bg-purple-500/80 px-2 py-0.5 rounded-full">0</span>
+                        </h2>
+                        <div class="flex gap-2">
+                            <button onclick="playAll()" class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-play mr-1"></i>Tocar
+                            </button>
+                            <button onclick="shufflePlay()" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-random mr-1"></i>Aleatório
+                            </button>
+                            <button onclick="clearLibrary()" class="bg-red-500/80 hover:bg-red-500 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                <i class="fas fa-trash mr-1"></i>Limpar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="musicLibrary" class="space-y-1.5 max-h-72 overflow-y-auto scrollbar-thin pr-1">
+                        <p class="text-gray-400 text-center py-8">
+                            <i class="fas fa-folder-open text-3xl mb-2 block opacity-50"></i>
+                            Nenhuma música adicionada
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Direita - Player -->
+            <div class="space-y-4">
+                <!-- Player -->
+                <div class="glass rounded-2xl p-4 md:p-6 neon-glow">
+                    <div class="text-center mb-5">
+                        <div id="albumArt" class="w-32 h-32 md:w-40 md:h-40 mx-auto bg-gradient-to-br from-cyan-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 shadow-2xl">
+                            <i class="fas fa-music text-4xl md:text-5xl opacity-80"></i>
+                        </div>
+                        <h3 id="currentTitle" class="text-base md:text-lg font-semibold truncate px-2">Nenhuma música</h3>
+                        <p id="currentArtist" class="text-gray-400 text-xs md:text-sm">Selecione uma música</p>
+                    </div>
+
+                    <!-- Progresso -->
+                    <div class="mb-5">
+                        <input type="range" id="progressBar" value="0" min="0" max="100" step="0.1" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                            <span id="currentTime">0:00</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Controles -->
+                    <div class="flex justify-center items-center gap-3 md:gap-4 mb-5">
+                        <button id="shuffleBtn" onclick="toggleShuffle()" class="control-btn text-xl md:text-2xl p-2" title="Aleatório">
+                            <i class="fas fa-random"></i>
+                        </button>
+                        <button onclick="prevTrack()" class="control-btn text-xl md:text-2xl p-2" title="Anterior">
+                            <i class="fas fa-step-backward"></i>
+                        </button>
+                        <button id="playPauseBtn" onclick="togglePlay()" class="play-btn-main w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-2xl md:text-3xl" title="Play/Pause">
+                            <i class="fas fa-play ml-1"></i>
+                        </button>
+                        <button onclick="nextTrack()" class="control-btn text-xl md:text-2xl p-2" title="Próxima">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                        <button id="repeatBtn" onclick="toggleRepeat()" class="control-btn text-xl md:text-2xl p-2" title="Repetir">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+
+                    <!-- Volume -->
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleMute()" class="text-gray-400 hover:text-white transition text-sm">
+                            <i id="volumeIcon" class="fas fa-volume-up"></i>
+                        </button>
+                        <input type="range" id="volumeBar" value="80" min="0" max="100" class="flex-1">
+                        <span id="volumePercent" class="text-xs text-gray-400 w-8">80%</span>
+                    </div>
+                </div>
+
+                <!-- Opções -->
+                <div class="glass rounded-2xl p-4 md:p-5 neon-glow">
+                    <h2 class="text-base font-semibold mb-3 flex items-center">
+                        <i class="fas fa-sliders-h mr-2 text-cyan-400"></i>
+                        Opções
+                    </h2>
+                    <div class="space-y-2.5 text-sm">
+                        <label class="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-white/5">
+                            <span><i class="fas fa-redo-alt mr-2 text-purple-400"></i>Repetir Música</span>
+                            <input type="checkbox" id="repeatOne" class="w-4 h-4 accent-cyan-500 cursor-pointer">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-white/5">
+                            <span><i class="fas fa-sync mr-2 text-cyan-400"></i>Repetir Playlist</span>
+                            <input type="checkbox" id="repeatPlaylist" checked class="w-4 h-4 accent-cyan-500 cursor-pointer">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-white/5">
+                            <span><i class="fas fa-random mr-2 text-pink-400"></i>Modo Aleatório</span>
+                            <input type="checkbox" id="shuffleMode" class="w-4 h-4 accent-cyan-500 cursor-pointer">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Fila -->
+                <div class="glass rounded-2xl p-4 md:p-5 neon-glow">
+                    <h2 class="text-base font-semibold mb-3 flex items-center">
+                        <i class="fas fa-list-ol mr-2 text-purple-400"></i>
+                        Próximas
+                    </h2>
+                    <div id="playlistQueue" class="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin pr-1">
+                        <p class="text-gray-500 text-center py-3 text-xs">
+                            Nenhuma música na fila
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualizador -->
+        <div class="glass rounded-2xl p-3 mt-4 neon-glow">
+            <div id="visualizer" class="flex justify-center items-end h-12 gap-0.5"></div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-6 text-gray-500 text-xs">
+            <p>🎵 RadioMC - Feito com ❤️ para amantes de música</p>
+        </footer>
+    </div>
+
+    <audio id="audioPlayer" preload="auto"></audio>
+
+    <script>
+        // =============================================
+        // INDEXEDDB - VERSÃO CORRIGIDA
+        // =============================================
+        const DB_NAME = 'RadioMC_DB_v3';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'musicFiles';
+        let db = null;
+
+        async function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = () => {
+                    console.error('Erro ao abrir IndexedDB');
+                    reject(request.error);
+                };
+                
+                request.onsuccess = () => {
+                    db = request.result;
+                    console.log('✅ Banco de dados conectado');
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains(STORE_NAME)) {
+                        database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+            });
+        }
+
+        async function saveMusic(name, arrayBuffer, mimeType) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([STORE_NAME], 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                
+                const data = {
+                    name: name,
+                    buffer: arrayBuffer,
+                    mimeType: mimeType || 'audio/mpeg',
+                    size: arrayBuffer.byteLength,
+                    date: Date.now()
+                };
+                
+                const req = store.add(data);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function loadAllMusic() {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([STORE_NAME], 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.getAll();
+                
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function deleteMusic(id) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([STORE_NAME], 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.delete(id);
+                
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function clearAllMusic() {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([STORE_NAME], 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.clear();
+                
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        // =============================================
+        // ESTADO GLOBAL
+        // =============================================
+        let musicLibrary = [];
+        let currentIndex = -1;
+        let isPlaying = false;
+        let isShuffled = false;
+        let repeatMode = 'all';
+        let currentBlobUrl = null;
+        let lastVolume = 80;
+        let vizActive = false;
+        let vizInterval = null;
+
+        const audio = document.getElementById('audioPlayer');
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const progressBar = document.getElementById('progressBar');
+        const volumeBar = document.getElementById('volumeBar');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const repeatBtn = document.getElementById('repeatBtn');
+        const albumArt = document.getElementById('albumArt');
+
+        // =============================================
+        // INICIALIZAÇÃO
+        // =============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await initDB();
+                await loadLibrary();
+                setupEvents();
+                createVisualizer();
+                loadSettings();
+                updateVolume();
+                showToast('🎵 RadioMC pronto!', 'success');
+            } catch (error) {
+                console.error('Erro ao iniciar:', error);
+                showToast('Erro ao iniciar. Recarregue a página.', 'error');
+            }
+        });
+
+        async function loadLibrary() {
+            try {
+                const data = await loadAllMusic();
+                musicLibrary = data.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    buffer: item.buffer,
+                    mimeType: item.mimeType,
+                    size: item.size
+                }));
+                
+                renderLibrary();
+                updateStatus();
+                console.log(`✅ ${musicLibrary.length} músicas carregadas`);
+            } catch (e) {
+                console.error('Erro ao carregar:', e);
+                musicLibrary = [];
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const cfg = JSON.parse(localStorage.getItem('radiomc_settings') || '{}');
+                repeatMode = cfg.repeat || 'all';
+                isShuffled = cfg.shuffle || false;
+                lastVolume = cfg.volume || 80;
+                
+                document.getElementById('repeatOne').checked = repeatMode === 'one';
+                document.getElementById('repeatPlaylist').checked = repeatMode === 'all';
+                document.getElementById('shuffleMode').checked = isShuffled;
+                volumeBar.value = lastVolume;
+                
+                updateShuffleBtn();
+                updateRepeatBtn();
+            } catch (e) {}
+        }
+
+        function saveSettings() {
+            localStorage.setItem('radiomc_settings', JSON.stringify({
+                repeat: repeatMode,
+                shuffle: isShuffled,
+                volume: volumeBar.value
+            }));
+        }
+
+        // =============================================
+        // EVENTOS
+        // =============================================
+        function setupEvents() {
+            // Upload
+            dropZone.onclick = () => fileInput.click();
+            
+            dropZone.ondragover = (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            };
+            
+            dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+            
+            dropZone.ondrop = (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            };
+            
+            fileInput.onchange = (e) => {
+                handleFiles(e.target.files);
+                fileInput.value = '';
+            };
+
+            // Áudio
+            audio.onloadedmetadata = () => {
+                document.getElementById('duration').textContent = formatTime(audio.duration);
+            };
+            
+            audio.ontimeupdate = () => {
+                if (audio.duration && isFinite(audio.duration)) {
+                    const pct = (audio.currentTime / audio.duration) * 100;
+                    progressBar.value = pct;
+                    document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
+                }
+            };
+            
+            audio.onended = handleTrackEnd;
+            
+            audio.onplay = () => {
+                isPlaying = true;
+                updatePlayBtn();
+                albumArt.classList.add('spinning');
+                startVisualizer();
+            };
+            
+            audio.onpause = () => {
+                isPlaying = false;
+                updatePlayBtn();
+                albumArt.classList.remove('spinning');
+                stopVisualizer();
+            };
+
+            // Controles
+            progressBar.oninput = () => {
+                if (audio.duration && isFinite(audio.duration)) {
+                    audio.currentTime = (progressBar.value / 100) * audio.duration;
+                }
+            };
+            
+            volumeBar.oninput = updateVolume;
+
+            // Checkboxes
+            document.getElementById('repeatOne').onchange = (e) => {
+                if (e.target.checked) {
+                    repeatMode = 'one';
+                    document.getElementById('repeatPlaylist').checked = false;
+                } else {
+                    repeatMode = 'none';
+                }
+                updateRepeatBtn();
+                saveSettings();
+            };
+
+            document.getElementById('repeatPlaylist').onchange = (e) => {
+                if (e.target.checked) {
+                    repeatMode = 'all';
+                    document.getElementById('repeatOne').checked = false;
+                } else {
+                    repeatMode = 'none';
+                }
+                updateRepeatBtn();
+                saveSettings();
+            };
+
+            document.getElementById('shuffleMode').onchange = (e) => {
+                isShuffled = e.target.checked;
+                updateShuffleBtn();
+                saveSettings();
+            };
+
+            // Teclado
+            document.onkeydown = (e) => {
+                if (e.target.tagName === 'INPUT') return;
+                
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    togglePlay();
+                } else if (e.code === 'ArrowRight') {
+                    nextTrack();
+                } else if (e.code === 'ArrowLeft') {
+                    prevTrack();
+                } else if (e.code === 'ArrowUp') {
+                    e.preventDefault();
+                    volumeBar.value = Math.min(100, +volumeBar.value + 5);
+                    updateVolume();
+                } else if (e.code === 'ArrowDown') {
+                    e.preventDefault();
+                    volumeBar.value = Math.max(0, +volumeBar.value - 5);
+                    updateVolume();
+                }
+            };
+        }
+
+        // =============================================
+        // UPLOAD
+        // =============================================
+        async function handleFiles(files) {
+            const validFiles = Array.from(files).filter(f => 
+                f.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(f.name)
+            );
+            
+            if (validFiles.length === 0) {
+                showToast('Nenhum arquivo de áudio válido', 'error');
+                return;
+            }
+
+            const progress = document.getElementById('uploadProgress');
+            const text = document.getElementById('uploadText');
+            progress.classList.remove('hidden');
+
+            let count = 0;
+            
+            for (const file of validFiles) {
+                text.textContent = `Processando: ${file.name.substring(0, 25)}...`;
+                
+                try {
+                    const buffer = await file.arrayBuffer();
+                    const name = file.name.replace(/\.[^/.]+$/, '');
+                    const mime = file.type || 'audio/mpeg';
+                    
+                    const id = await saveMusic(name, buffer, mime);
+                    
+                    musicLibrary.push({
+                        id,
+                        name,
+                        buffer,
+                        mimeType: mime,
+                        size: buffer.byteLength
+                    });
+                    
+                    count++;
+                } catch (err) {
+                    console.error('Erro:', file.name, err);
+                }
+            }
+
+            progress.classList.add('hidden');
+            renderLibrary();
+            updateStatus();
+            
+            if (count > 0) {
+                showToast(`✅ ${count} música(s) adicionada(s)!`, 'success');
+            }
+        }
+
+        // =============================================
+        // RENDERIZAÇÃO
+        // =============================================
+        function renderLibrary() {
+            const container = document.getElementById('musicLibrary');
+            document.getElementById('musicCount').textContent = musicLibrary.length;
+
+            if (musicLibrary.length === 0) {
+                container.innerHTML = `
+                    <p class="text-gray-400 text-center py-8">
+                        <i class="fas fa-folder-open text-3xl mb-2 block opacity-50"></i>
+                        Nenhuma música adicionada
+                    </p>`;
+                updateQueue();
+                return;
+            }
+
+            container.innerHTML = musicLibrary.map((m, i) => `
+                <div class="music-item flex items-center gap-2 p-2.5 rounded-lg cursor-pointer ${currentIndex === i ? 'playing' : ''}" 
+                     onclick="playTrack(${i})">
+                    <div class="w-9 h-9 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        ${currentIndex === i && isPlaying ? 
+                            '<div class="equalizer"><span></span><span></span><span></span><span></span></div>' : 
+                            '<i class="fas fa-music text-xs"></i>'}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="truncate text-sm font-medium">${escapeHtml(m.name)}</p>
+                        <p class="text-xs text-gray-500">${formatSize(m.size)}</p>
+                    </div>
+                    <button onclick="event.stopPropagation(); removeTrack(${i})" 
+                            class="text-gray-500 hover:text-red-400 transition p-1.5">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            updateQueue();
+        }
+
+        function updateQueue() {
+            const container = document.getElementById('playlistQueue');
+            
+            if (musicLibrary.length === 0 || currentIndex < 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-3 text-xs">Nenhuma música na fila</p>';
+                return;
+            }
+
+            const queue = [];
+            for (let i = 0; i < Math.min(5, musicLibrary.length); i++) {
+                const idx = (currentIndex + i) % musicLibrary.length;
+                queue.push({ ...musicLibrary[idx], idx });
+            }
+
+            container.innerHTML = queue.map((m, i) => `
+                <div class="flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition
+                     ${i === 0 ? 'bg-cyan-500/20 text-cyan-300' : 'hover:bg-white/5'}" 
+                     onclick="playTrack(${m.idx})">
+                    <span class="text-xs text-gray-500 w-4">${i === 0 ? '▶' : i + 1}</span>
+                    <p class="text-xs truncate flex-1">${escapeHtml(m.name)}</p>
+                </div>
+            `).join('');
+        }
+
+        function updateStatus() {
+            document.getElementById('storageStatus').textContent = `📁 ${musicLibrary.length} música(s) salva(s)`;
+        }
+
+        function updateNowPlaying(title, subtitle) {
+            document.getElementById('currentTitle').textContent = title;
+            document.getElementById('currentArtist').textContent = subtitle;
+        }
+
+        // =============================================
+        // REPRODUÇÃO - CORRIGIDA
+        // =============================================
+        function createBlobUrl(music) {
+            // Limpar URL anterior
+            if (currentBlobUrl) {
+                URL.revokeObjectURL(currentBlobUrl);
+                currentBlobUrl = null;
+            }
+            
+            try {
+                // Garantir que temos um ArrayBuffer válido
+                let arrayBuffer = music.buffer;
+                
+                // Se for um objeto com data (como vem do IndexedDB em alguns casos)
+                if (arrayBuffer && arrayBuffer.buffer) {
+                    arrayBuffer = arrayBuffer.buffer;
+                }
+                
+                // Criar Blob a partir do ArrayBuffer
+                const blob = new Blob([arrayBuffer], { type: music.mimeType || 'audio/mpeg' });
+                currentBlobUrl = URL.createObjectURL(blob);
+                
+                return currentBlobUrl;
+            } catch (err) {
+                console.error('Erro ao criar blob:', err);
+                return null;
+            }
+        }
+
+        function playTrack(index) {
+            if (index < 0 || index >= musicLibrary.length) {
+                showToast('Música não encontrada', 'error');
+                return;
+            }
+            
+            const music = musicLibrary[index];
+            
+            if (!music || !music.buffer) {
+                showToast('Dados da música corrompidos', 'error');
+                return;
+            }
+            
+            currentIndex = index;
+            
+            const url = createBlobUrl(music);
+            
+            if (!url) {
+                showToast('Erro ao carregar música', 'error');
+                return;
+            }
+            
+            // Parar e resetar o áudio
+            audio.pause();
+            audio.currentTime = 0;
+            
+            // Definir nova fonte
+            audio.src = url;
+            
+            // Tentar reproduzir
+            const playPromise = audio.play();
+            
+            if (playPromise) {
+                playPromise.then(() => {
+                    updateNowPlaying(music.name, 'Reproduzindo');
+                    renderLibrary();
+                    saveSettings();
+                }).catch(err => {
+                    console.log('Play precisa de interação:', err.message);
+                    updateNowPlaying(music.name, 'Clique em ▶ para tocar');
+                    renderLibrary();
+                });
+            }
+        }
+
+        function togglePlay() {
+            if (musicLibrary.length === 0) {
+                showToast('Adicione músicas primeiro!', 'info');
+                return;
+            }
+            
+            if (currentIndex === -1) {
+                playTrack(0);
+                return;
+            }
+
+            if (isPlaying) {
+                audio.pause();
+            } else {
+                // Se não tem src, recarregar a música
+                if (!audio.src || audio.readyState === 0) {
+                    playTrack(currentIndex);
+                } else {
+                    audio.play().catch(() => playTrack(currentIndex));
+                }
+            }
+        }
+
+        function prevTrack() {
+            if (musicLibrary.length === 0) return;
+            
+            if (audio.currentTime > 3) {
+                audio.currentTime = 0;
+                return;
+            }
+            
+            if (isShuffled) {
+                playTrack(Math.floor(Math.random() * musicLibrary.length));
+            } else {
+                playTrack(currentIndex > 0 ? currentIndex - 1 : musicLibrary.length - 1);
+            }
+        }
+
+        function nextTrack() {
+            if (musicLibrary.length === 0) return;
+            
+            if (isShuffled) {
+                let idx;
+                do {
+                    idx = Math.floor(Math.random() * musicLibrary.length);
+                } while (idx === currentIndex && musicLibrary.length > 1);
+                playTrack(idx);
+            } else {
+                playTrack((currentIndex + 1) % musicLibrary.length);
+            }
+        }
+
+        function handleTrackEnd() {
+            if (repeatMode === 'one') {
+                audio.currentTime = 0;
+                audio.play();
+            } else if (repeatMode === 'all') {
+                nextTrack();
+            } else if (currentIndex < musicLibrary.length - 1) {
+                nextTrack();
+            } else {
+                isPlaying = false;
+                updatePlayBtn();
+                stopVisualizer();
+                updateNowPlaying(musicLibrary[currentIndex]?.name || 'Fim', 'Playlist finalizada');
+            }
+        }
+
+        function playAll() {
+            if (musicLibrary.length > 0) {
+                isShuffled = false;
+                document.getElementById('shuffleMode').checked = false;
+                updateShuffleBtn();
+                playTrack(0);
+            } else {
+                showToast('Adicione músicas primeiro!', 'info');
+            }
+        }
+
+        function shufflePlay() {
+            if (musicLibrary.length > 0) {
+                isShuffled = true;
+                document.getElementById('shuffleMode').checked = true;
+                updateShuffleBtn();
+                saveSettings();
+                playTrack(Math.floor(Math.random() * musicLibrary.length));
+            } else {
+                showToast('Adicione músicas primeiro!', 'info');
+            }
+        }
+
+        // =============================================
+        // CONTROLES UI
+        // =============================================
+        function updatePlayBtn() {
+            const icon = playPauseBtn.querySelector('i');
+            icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play ml-1';
+        }
+
+        function toggleShuffle() {
+            isShuffled = !isShuffled;
+            document.getElementById('shuffleMode').checked = isShuffled;
+            updateShuffleBtn();
+            saveSettings();
+            showToast(isShuffled ? '🔀 Aleatório ativado' : '🔀 Aleatório desativado', 'info');
+        }
+
+        function updateShuffleBtn() {
+            shuffleBtn.classList.toggle('active', isShuffled);
+        }
+
+        function toggleRepeat() {
+            const modes = ['none', 'one', 'all'];
+            repeatMode = modes[(modes.indexOf(repeatMode) + 1) % 3];
+            
+            document.getElementById('repeatOne').checked = repeatMode === 'one';
+            document.getElementById('repeatPlaylist').checked = repeatMode === 'all';
+            
+            updateRepeatBtn();
+            saveSettings();
+            
+            const msgs = { none: '🔁 Repetição desativada', one: '🔂 Repetir música', all: '🔁 Repetir playlist' };
+            showToast(msgs[repeatMode], 'info');
+        }
+
+        function updateRepeatBtn() {
+            repeatBtn.classList.toggle('active', repeatMode !== 'none');
+            repeatBtn.querySelector('i').className = repeatMode === 'one' ? 'fas fa-redo-alt' : 'fas fa-redo';
+        }
+
+        function updateVolume() {
+            audio.volume = volumeBar.value / 100;
+            document.getElementById('volumePercent').textContent = volumeBar.value + '%';
+            
+            const icon = document.getElementById('volumeIcon');
+            const vol = +volumeBar.value;
+            icon.className = vol === 0 ? 'fas fa-volume-mute' : vol < 50 ? 'fas fa-volume-down' : 'fas fa-volume-up';
+            
+            saveSettings();
+        }
+
+        function toggleMute() {
+            if (+volumeBar.value > 0) {
+                lastVolume = volumeBar.value;
+                volumeBar.value = 0;
+            } else {
+                volumeBar.value = lastVolume || 80;
+            }
+            updateVolume();
+        }
+
+        // =============================================
+        // REMOVER / LIMPAR
+        // =============================================
+        async function removeTrack(index) {
+            const music = musicLibrary[index];
+            
+            try {
+                await deleteMusic(music.id);
+                musicLibrary.splice(index, 1);
+                
+                if (currentIndex === index) {
+                    audio.pause();
+                    audio.src = '';
+                    if (currentBlobUrl) {
+                        URL.revokeObjectURL(currentBlobUrl);
+                        currentBlobUrl = null;
+                    }
+                    currentIndex = -1;
+                    isPlaying = false;
+                    updatePlayBtn();
+                    stopVisualizer();
+                    updateNowPlaying('Nenhuma música', 'Selecione uma música');
+                } else if (currentIndex > index) {
+                    currentIndex--;
+                }
+                
+                renderLibrary();
+                updateStatus();
+                showToast('Música removida', 'info');
+            } catch (err) {
+                console.error('Erro ao remover:', err);
+            }
+        }
+
+        async function clearLibrary() {
+            if (musicLibrary.length === 0) {
+                showToast('Biblioteca já está vazia', 'info');
+                return;
+            }
+            
+            if (!confirm('Remover todas as músicas?')) return;
+            
+            try {
+                await clearAllMusic();
+                
+                audio.pause();
+                audio.src = '';
+                if (currentBlobUrl) {
+                    URL.revokeObjectURL(currentBlobUrl);
+                    currentBlobUrl = null;
+                }
+                
+                musicLibrary = [];
+                currentIndex = -1;
+                isPlaying = false;
+                
+                updatePlayBtn();
+                stopVisualizer();
+                updateNowPlaying('Nenhuma música', 'Selecione uma música');
+                renderLibrary();
+                updateStatus();
+                
+                showToast('Biblioteca limpa!', 'success');
+            } catch (err) {
+                console.error('Erro:', err);
+            }
+        }
+
+        // =============================================
+        // VISUALIZADOR - OTIMIZADO
+        // =============================================
+        function createVisualizer() {
+            const container = document.getElementById('visualizer');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 40; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'viz-bar bg-gradient-to-t from-cyan-500 to-purple-500 rounded-sm';
+                bar.style.cssText = 'width:5px;height:4px;';
+                container.appendChild(bar);
+            }
+        }
+
+        function startVisualizer() {
+            if (vizActive) return;
+            vizActive = true;
+            
+            const bars = document.querySelectorAll('.viz-bar');
+            
+            function animate() {
+                if (!vizActive) return;
+                
+                bars.forEach(bar => {
+                    bar.style.height = (Math.random() * 36 + 4) + 'px';
+                });
+                
+                vizInterval = requestAnimationFrame(() => {
+                    setTimeout(animate, 100);
+                });
+            }
+            
+            animate();
+        }
+
+        function stopVisualizer() {
+            vizActive = false;
+            if (vizInterval) {
+                cancelAnimationFrame(vizInterval);
+                vizInterval = null;
+            }
+            document.querySelectorAll('.viz-bar').forEach(bar => {
+                bar.style.height = '4px';
+            });
+        }
+
+        // =============================================
+        // UTILITÁRIOS
+        // =============================================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTime(sec) {
+            if (!sec || !isFinite(sec)) return '0:00';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return m + ':' + s.toString().padStart(2, '0');
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return '';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        let toastTimeout = null;
+        function showToast(msg, type = 'info') {
+            document.querySelectorAll('.toast').forEach(t => t.remove());
+            if (toastTimeout) clearTimeout(toastTimeout);
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            
+            toastTimeout = setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // Limpar ao sair
+        window.onbeforeunload = () => {
+            if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+        };
+    </script>
+</body>
+</html>
