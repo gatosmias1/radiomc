@@ -491,6 +491,10 @@
                                 <span data-translate="loadingRadios">Carregando rádios...</span>
                             </p>
                         </div>
+                        <button id="loadMoreBtn" onclick="loadMoreRadios()" class="hidden w-full mt-4 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 rounded-xl font-semibold transition">
+                            <i class="fas fa-plus mr-2"></i><span data-translate="loadMore">Carregar Mais 100 Rádios</span>
+                            <span id="radioProgress" class="ml-2 text-sm opacity-80"></span>
+                        </button>
                     </div>
 
                     <div class="glass rounded-2xl p-4 neon-glow mt-4">
@@ -683,6 +687,8 @@
                 radioOnline: "🟢 Online",
                 radioError: "❌ Erro ao conectar",
                 connecting: "Conectando...",
+                loadMore: "Carregar Mais 100 Rádios",
+                totalRadios: "Total",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Eletrônica",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Clássica",
@@ -744,6 +750,8 @@
                 radioOnline: "🟢 Online",
                 radioError: "❌ Connection error",
                 connecting: "Connecting...",
+                loadMore: "Load More 100 Radios",
+                totalRadios: "Total",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Electronic",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Classical",
@@ -805,6 +813,8 @@
                 radioOnline: "🟢 En línea",
                 radioError: "❌ Error de conexión",
                 connecting: "Conectando...",
+                loadMore: "Cargar 100 Radios Más",
+                totalRadios: "Total",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Electrónica",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Clásica",
@@ -1667,6 +1677,9 @@
         let db = null;
         let musicLibrary = [];
         let radioStations = [];
+        let allRadioStations = []; // Todas as 30.000 rádios
+        let displayedRadios = 0; // Quantas estão sendo exibidas
+        const RADIOS_PER_PAGE = 100; // Carregar 100 por vez
         let favoriteRadios = [];
         let currentIndex = -1;
         let currentRadio = null;
@@ -1970,14 +1983,16 @@
         }
 
         // =============================================
-        // RÁDIOS ONLINE (1000 sem repetir)
+        // RÁDIOS ONLINE (30.000, exibe 100 por vez)
         // =============================================
         async function loadRadios(country = '', genre = '') {
             const loading = document.getElementById('radioLoading');
             loading.classList.remove('hidden');
+            displayedRadios = 0;
 
             try {
-                let url = `${RADIO_API}/stations/search?limit=1000&order=clickcount&reverse=true&hidebroken=true`;
+                // Busca até 30.000 rádios
+                let url = `${RADIO_API}/stations/search?limit=30000&order=clickcount&reverse=true&hidebroken=true`;
                 if (country) url += `&countrycode=${country}`;
                 if (genre) url += `&tag=${encodeURIComponent(genre)}`;
 
@@ -1986,13 +2001,18 @@
                 
                 // Remove duplicatas por UUID
                 const seen = new Set();
-                radioStations = data.filter(r => {
+                allRadioStations = data.filter(r => {
                     if (seen.has(r.stationuuid)) return false;
                     seen.add(r.stationuuid);
                     return true;
                 });
                 
+                // Exibe apenas as primeiras 100
+                displayedRadios = Math.min(RADIOS_PER_PAGE, allRadioStations.length);
+                radioStations = allRadioStations.slice(0, displayedRadios);
+                
                 renderRadios();
+                updateLoadMoreButton();
             } catch (error) {
                 console.error('Erro ao carregar rádios:', error);
             }
@@ -2000,25 +2020,50 @@
             loading.classList.add('hidden');
         }
 
+        function loadMoreRadios() {
+            const nextBatch = displayedRadios + RADIOS_PER_PAGE;
+            displayedRadios = Math.min(nextBatch, allRadioStations.length);
+            radioStations = allRadioStations.slice(0, displayedRadios);
+            renderRadios();
+            updateLoadMoreButton();
+        }
+
+        function updateLoadMoreButton() {
+            const btn = document.getElementById('loadMoreBtn');
+            const progress = document.getElementById('radioProgress');
+            
+            if (displayedRadios < allRadioStations.length) {
+                btn.classList.remove('hidden');
+                progress.textContent = `(${displayedRadios}/${allRadioStations.length})`;
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
         async function searchRadios(query) {
             if (!query.trim()) { loadRadios(); return; }
 
             const loading = document.getElementById('radioLoading');
             loading.classList.remove('hidden');
+            displayedRadios = 0;
 
             try {
-                const url = `${RADIO_API}/stations/search?name=${encodeURIComponent(query)}&limit=1000&order=clickcount&reverse=true&hidebroken=true`;
+                const url = `${RADIO_API}/stations/search?name=${encodeURIComponent(query)}&limit=30000&order=clickcount&reverse=true&hidebroken=true`;
                 const response = await fetch(url);
                 const data = await response.json();
                 
                 const seen = new Set();
-                radioStations = data.filter(r => {
+                allRadioStations = data.filter(r => {
                     if (seen.has(r.stationuuid)) return false;
                     seen.add(r.stationuuid);
                     return true;
                 });
                 
+                displayedRadios = Math.min(RADIOS_PER_PAGE, allRadioStations.length);
+                radioStations = allRadioStations.slice(0, displayedRadios);
+                
                 renderRadios();
+                updateLoadMoreButton();
             } catch (error) {
                 console.error('Erro na busca:', error);
             }
