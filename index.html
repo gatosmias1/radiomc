@@ -463,16 +463,22 @@
                     </div>
 
                     <div class="glass rounded-2xl p-4 neon-glow">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-lg font-semibold flex items-center">
-                                <i class="fas fa-broadcast-tower mr-2 text-cyan-400"></i>
-                                <span data-translate="availableRadios">Rádios Disponíveis</span>
-                                <span id="radioCount" class="ml-2 text-xs bg-cyan-500/80 px-2 py-0.5 rounded-full">0</span>
-                                <span id="onlineCount" class="ml-2 text-xs bg-green-500/80 px-2 py-0.5 rounded-full hidden">0 online</span>
-                            </h2>
-                            <div id="radioLoading" class="hidden">
-                                <div class="loading-spinner"></div>
+                        <div class="flex flex-col gap-2 mb-3">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-lg font-semibold flex items-center">
+                                    <i class="fas fa-broadcast-tower mr-2 text-cyan-400"></i>
+                                    <span data-translate="availableRadios">Rádios Disponíveis</span>
+                                    <span id="radioCount" class="ml-2 text-xs bg-cyan-500/80 px-2 py-0.5 rounded-full">0</span>
+                                    <span id="onlineCount" class="ml-2 text-xs bg-green-500/80 px-2 py-0.5 rounded-full hidden">0 online</span>
+                                </h2>
+                                <div id="radioLoading" class="hidden">
+                                    <div class="loading-spinner"></div>
+                                </div>
                             </div>
+                            <p class="text-xs text-yellow-400/80 bg-yellow-400/10 p-2 rounded-lg text-center">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                <span data-translate="clickWarning">Dica: Clique apenas uma vez na rádio e aguarde. Cliques rápidos podem gerar erro.</span>
+                            </p>
                         </div>
                         <div id="radioList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto scrollbar-thin pr-1">
                             <p class="text-gray-400 text-center py-8 col-span-2">
@@ -652,6 +658,7 @@
                 genre: "Gênero:",
                 bitrate: "Bitrate:",
                 visitSite: "Visitar site",
+                clickWarning: "Dica: Clique apenas uma vez na rádio e aguarde. Cliques rápidos podem gerar erro.",
                 footer: "Músicas locais + Rádios do mundo todo",
                 ready: "🎵 RadioMC pronto!",
                 musicAdded: "música(s) adicionada(s)!",
@@ -1788,13 +1795,7 @@
                 stopVisualizer(); 
                 document.getElementById('albumArt').classList.remove('spinning'); 
             };
-            audio.onerror = () => {
-                if (currentRadio) {
-                    showRadioStatus('offline');
-                    offlineRadios.add(currentRadio.stationuuid);
-                    renderRadios();
-                }
-            };
+            // Removido audio.onerror aqui - tratamento de erro é feito no playRadio()
             audio.onwaiting = () => {
                 if (currentRadio) showRadioStatus('connecting');
             };
@@ -2034,6 +2035,24 @@
 
             container.innerHTML = radioStations.map((r, i) => {
                 const isOffline = offlineRadios.has(r.stationuuid);
+                
+                // Lógica inteligente para mostrar a categoria
+                let displayTag = '';
+                if (r.tags) {
+                    const tags = r.tags.split(',').map(t => t.trim());
+                    // Se o usuário filtrou por um gênero e a rádio tem esse gênero, mostra ele!
+                    if (currentGenre && tags.some(t => t.toLowerCase() === currentGenre.toLowerCase())) {
+                        const match = tags.find(t => t.toLowerCase() === currentGenre.toLowerCase());
+                        displayTag = match.charAt(0).toUpperCase() + match.slice(1);
+                    } else {
+                        // Se não, mostra o primeiro (ou o segundo se o primeiro for muito genérico)
+                        displayTag = tags[0].charAt(0).toUpperCase() + tags[0].slice(1);
+                    }
+                }
+
+                // Traduz a categoria se possível
+                const translatedGenre = tGenre(displayTag.toLowerCase()) || displayTag;
+
                 return `
                 <div class="radio-card glass rounded-xl p-3 cursor-pointer ${currentRadio?.stationuuid === r.stationuuid ? 'playing' : ''} ${isOffline ? 'offline' : ''}" onclick="playRadio(${i})">
                     <div class="flex items-center gap-3">
@@ -2045,7 +2064,7 @@
                                 <span class="status-dot ${isOffline ? 'offline' : 'online'}"></span>
                                 <p class="font-medium text-sm truncate">${escapeHtml(r.name)}</p>
                             </div>
-                            <p class="text-xs text-gray-400 truncate">${r.country || 'Desconhecido'} ${r.tags ? '• ' + r.tags.split(',')[0] : ''}</p>
+                            <p class="text-xs text-gray-400 truncate">${r.country || 'Desconhecido'} ${translatedGenre ? '• ' + translatedGenre : ''}</p>
                         </div>
                         <button onclick="event.stopPropagation(); toggleFavorite('${r.stationuuid}')" class="p-2 hover:scale-110 transition">
                             <i class="fas fa-star ${isFavorite(r.stationuuid) ? 'text-yellow-400' : 'text-gray-500'}"></i>
@@ -2055,6 +2074,11 @@
             `}).join('');
         }
 
+        let isConnecting = false;
+        let connectingRadioId = null;
+        let lastClickedRadioId = null;
+        let lastClickTime = 0;
+
         function playRadio(index) {
             const radio = radioStations[index];
             if (!radio || !radio.url_resolved) {
@@ -2062,31 +2086,92 @@
                 return;
             }
 
-            if (offlineRadios.has(radio.stationuuid)) {
-                offlineRadios.delete(radio.stationuuid);
+            const now = Date.now();
+            
+            // Proteção contra cliques rápidos na mesma rádio (menos de 500ms)
+            if (lastClickedRadioId === radio.stationuuid && (now - lastClickTime) < 500) {
+                return; // Ignora clique rápido demais
+            }
+            
+            lastClickedRadioId = radio.stationuuid;
+            lastClickTime = now;
+
+            // Se clicar na mesma rádio que já está tocando, apenas toggle play/pause
+            if (currentRadio && currentRadio.stationuuid === radio.stationuuid) {
+                if (isPlaying) {
+                    audio.pause();
+                } else {
+                    audio.play().catch(() => {});
+                }
+                return;
             }
 
+            // Se já está conectando em qualquer rádio, ignora
+            if (isConnecting) {
+                return;
+            }
+
+            // Limpa status de offline ao tentar novamente
+            if (offlineRadios.has(radio.stationuuid)) {
+                offlineRadios.delete(radio.stationuuid);
+                renderRadios();
+            }
+
+            // Salva o ID antes de começar
+            const thisRadioId = radio.stationuuid;
+            
             currentRadio = radio;
             currentIndex = -1;
+            isConnecting = true;
+            connectingRadioId = thisRadioId;
 
             if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
 
             showRadioStatus('connecting');
             
-            audio.src = radio.url_resolved;
-            audio.play().then(() => {
-                updateNowPlaying(radio.name, radio.country || 'Rádio Online');
-                showLiveIndicator(true);
-                updateRadioInfo(radio);
-                renderRadios();
-                renderFavorites();
-            }).catch(err => {
-                console.error('Erro ao tocar rádio:', err);
-                showRadioStatus('offline');
-                offlineRadios.add(radio.stationuuid);
-                renderRadios();
-                showToast(t('radioError'), 'error');
-            });
+            // Para o áudio atual antes de trocar
+            audio.pause();
+            audio.src = '';
+            
+            // Pequeno delay para garantir que o áudio anterior parou
+            setTimeout(() => {
+                // Verifica se ainda é a mesma rádio que queremos tocar
+                if (currentRadio && currentRadio.stationuuid !== thisRadioId) {
+                    isConnecting = false;
+                    connectingRadioId = null;
+                    return;
+                }
+                
+                audio.src = radio.url_resolved;
+                
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        // Sucesso - verifica se ainda é a mesma rádio
+                        if (currentRadio && currentRadio.stationuuid === thisRadioId) {
+                            updateNowPlaying(radio.name, radio.country || 'Rádio Online');
+                            showLiveIndicator(true);
+                            updateRadioInfo(radio);
+                            renderRadios();
+                            renderFavorites();
+                        }
+                        isConnecting = false;
+                        connectingRadioId = null;
+                    }).catch(err => {
+                        // Erro - só marca offline se ainda é a mesma rádio
+                        if (currentRadio && currentRadio.stationuuid === thisRadioId) {
+                            console.error('Erro ao tocar rádio:', err);
+                            showRadioStatus('offline');
+                            offlineRadios.add(thisRadioId);
+                            renderRadios();
+                            showToast(t('radioError'), 'error');
+                        }
+                        isConnecting = false;
+                        connectingRadioId = null;
+                    });
+                }
+            }, 100);
 
             document.getElementById('progressContainer').classList.add('hidden');
         }
