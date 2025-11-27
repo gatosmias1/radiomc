@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RadioMC - Free online radio and music player">
+    <meta name="theme-color" content="#1a1a2e">
     <title>RadioMC - Sua Rádio Musical</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -63,6 +65,7 @@
         
         .radio-card {
             transition: all 0.3s ease;
+            position: relative;
         }
         
         .radio-card:hover {
@@ -73,6 +76,46 @@
         .radio-card.playing {
             background: rgba(0, 255, 255, 0.25);
             border: 2px solid #00ffff;
+        }
+        
+        .radio-card.offline {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .radio-card.offline::after {
+            content: 'OFFLINE';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ef4444;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-dot.online {
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+        
+        .status-dot.offline {
+            background: #ef4444;
+        }
+        
+        .status-dot.checking {
+            background: #f59e0b;
+            animation: pulse 1s infinite;
         }
         
         input[type="range"] {
@@ -103,8 +146,6 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        
-        .pulsing { animation: pulse 1.5s ease-in-out infinite; }
         
         .scrollbar-thin::-webkit-scrollbar { width: 6px; }
         .scrollbar-thin::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
@@ -191,25 +232,59 @@
             border-radius: 50%;
             animation: pulse 1s ease-in-out infinite;
         }
+
+        .lang-selector {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .lang-selector:focus {
+            outline: none;
+            border-color: #00ffff;
+        }
     </style>
 </head>
 <body class="text-white p-3 md:p-6">
     <div class="max-w-6xl mx-auto">
         <!-- Header -->
-        <header class="text-center mb-4">
+        <header class="text-center mb-4 relative">
+            <div class="absolute right-0 top-0">
+                <select id="langSelector" class="lang-selector text-white">
+                    <option value="pt">🇧🇷 Português</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="fr">🇫🇷 Français</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="it">🇮🇹 Italiano</option>
+                    <option value="ja">🇯🇵 日本語</option>
+                    <option value="ko">🇰🇷 한국어</option>
+                    <option value="zh">🇨🇳 中文</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="ar">🇸🇦 العربية</option>
+                    <option value="hi">🇮🇳 हिन्दी</option>
+                    <option value="tr">🇹🇷 Türkçe</option>
+                    <option value="pl">🇵🇱 Polski</option>
+                    <option value="nl">🇳🇱 Nederlands</option>
+                    <option value="th">🇹🇭 ไทย</option>
+                </select>
+            </div>
             <h1 class="text-3xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 <i class="fas fa-broadcast-tower mr-2"></i>RadioMC
             </h1>
-            <p class="text-gray-400 mt-1 text-sm">Sua biblioteca musical + Rádios do mundo</p>
+            <p id="headerSubtitle" class="text-gray-400 mt-1 text-sm"></p>
         </header>
 
         <!-- Tabs -->
         <div class="flex justify-center gap-2 mb-4">
             <button onclick="switchTab('library')" id="tabLibrary" class="tab-btn active px-6 py-2 rounded-full font-medium glass">
-                <i class="fas fa-music mr-2"></i>Biblioteca
+                <i class="fas fa-music mr-2"></i><span data-translate="library">Biblioteca</span>
             </button>
             <button onclick="switchTab('radios')" id="tabRadios" class="tab-btn px-6 py-2 rounded-full font-medium glass">
-                <i class="fas fa-broadcast-tower mr-2"></i>Rádios Online
+                <i class="fas fa-broadcast-tower mr-2"></i><span data-translate="radiosOnline">Rádios Online</span>
             </button>
         </div>
 
@@ -221,50 +296,48 @@
                 
                 <!-- ABA BIBLIOTECA -->
                 <div id="libraryTab">
-                    <!-- Upload -->
                     <div class="glass rounded-2xl p-4 neon-glow mb-4">
                         <h2 class="text-lg font-semibold mb-3 flex items-center">
                             <i class="fas fa-cloud-upload-alt mr-2 text-cyan-400"></i>
-                            Adicionar Músicas
+                            <span data-translate="addMusic">Adicionar Músicas</span>
                         </h2>
                         <div id="dropZone" class="drop-zone rounded-xl p-6 text-center cursor-pointer">
                             <i class="fas fa-music text-4xl text-cyan-400 mb-2"></i>
-                            <p class="text-base">Arraste músicas aqui</p>
-                            <p class="text-gray-400 text-sm">ou clique para selecionar</p>
+                            <p data-translate="dragHere" class="text-base">Arraste músicas aqui</p>
+                            <p data-translate="clickToSelect" class="text-gray-400 text-sm">ou clique para selecionar</p>
                             <input type="file" id="fileInput" multiple accept="audio/*" class="hidden">
                         </div>
                         <div id="uploadProgress" class="hidden mt-3">
                             <div class="flex items-center gap-3">
                                 <div class="loading-spinner"></div>
-                                <span id="uploadText" class="text-sm">Processando...</span>
+                                <span id="uploadText" data-translate="processing" class="text-sm">Processando...</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Biblioteca -->
                     <div class="glass rounded-2xl p-4 neon-glow">
                         <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
                             <h2 class="text-lg font-semibold flex items-center">
                                 <i class="fas fa-compact-disc mr-2 text-purple-400"></i>
-                                Minhas Músicas
+                                <span data-translate="myMusic">Minhas Músicas</span>
                                 <span id="musicCount" class="ml-2 text-xs bg-purple-500/80 px-2 py-0.5 rounded-full">0</span>
                             </h2>
                             <div class="flex gap-2">
                                 <button onclick="playAllLocal()" class="bg-cyan-500 hover:bg-cyan-400 px-3 py-1.5 rounded-lg text-xs font-medium transition">
-                                    <i class="fas fa-play mr-1"></i>Tocar
+                                    <i class="fas fa-play mr-1"></i><span data-translate="play">Tocar</span>
                                 </button>
                                 <button onclick="shufflePlayLocal()" class="bg-purple-500 hover:bg-purple-400 px-3 py-1.5 rounded-lg text-xs font-medium transition">
-                                    <i class="fas fa-random mr-1"></i>Aleatório
+                                    <i class="fas fa-random mr-1"></i><span data-translate="shuffle">Aleatório</span>
                                 </button>
                                 <button onclick="clearLibrary()" class="bg-red-500/80 hover:bg-red-500 px-3 py-1.5 rounded-lg text-xs font-medium transition">
-                                    <i class="fas fa-trash mr-1"></i>Limpar
+                                    <i class="fas fa-trash mr-1"></i><span data-translate="clear">Limpar</span>
                                 </button>
                             </div>
                         </div>
                         <div id="musicLibrary" class="space-y-1.5 max-h-80 overflow-y-auto scrollbar-thin pr-1">
                             <p class="text-gray-400 text-center py-8">
                                 <i class="fas fa-folder-open text-3xl mb-2 block opacity-50"></i>
-                                Nenhuma música adicionada
+                                <span data-translate="noMusic">Nenhuma música adicionada</span>
                             </p>
                         </div>
                     </div>
@@ -272,49 +345,99 @@
 
                 <!-- ABA RÁDIOS ONLINE -->
                 <div id="radiosTab" class="hidden">
-                    <!-- Busca e Filtros -->
                     <div class="glass rounded-2xl p-4 neon-glow mb-4">
                         <div class="flex flex-col md:flex-row gap-3 mb-4">
                             <div class="flex-1 relative">
                                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                <input type="text" id="radioSearch" placeholder="Buscar rádio..." 
+                                <input type="text" id="radioSearch" data-placeholder="searchRadio" placeholder="Buscar rádio..." 
                                     class="w-full bg-white/10 border border-white/20 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-cyan-400">
                             </div>
                             <select id="countryFilter" class="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 focus:outline-none focus:border-cyan-400">
-                                <option value="">🌍 Todos os países</option>
-                                <option value="BR">🇧🇷 Brasil</option>
-                                <option value="US">🇺🇸 EUA</option>
-                                <option value="GB">🇬🇧 Reino Unido</option>
-                                <option value="JP">🇯🇵 Japão</option>
-                                <option value="DE">🇩🇪 Alemanha</option>
-                                <option value="FR">🇫🇷 França</option>
-                                <option value="ES">🇪🇸 Espanha</option>
-                                <option value="PT">🇵🇹 Portugal</option>
+                                <option value="" data-translate="allCountries">🌍 Todos os países</option>
+                                <optgroup label="🌎 América do Sul">
+                                    <option value="BR">🇧🇷 Brasil</option>
+                                    <option value="AR">🇦🇷 Argentina</option>
+                                    <option value="CL">🇨🇱 Chile</option>
+                                    <option value="CO">🇨🇴 Colômbia</option>
+                                    <option value="PE">🇵🇪 Peru</option>
+                                    <option value="UY">🇺🇾 Uruguai</option>
+                                    <option value="VE">🇻🇪 Venezuela</option>
+                                    <option value="EC">🇪🇨 Equador</option>
+                                    <option value="BO">🇧🇴 Bolívia</option>
+                                    <option value="PY">🇵🇾 Paraguai</option>
+                                </optgroup>
+                                <optgroup label="🌎 América do Norte">
+                                    <option value="US">🇺🇸 EUA</option>
+                                    <option value="CA">🇨🇦 Canadá</option>
+                                    <option value="MX">🇲🇽 México</option>
+                                </optgroup>
+                                <optgroup label="🌍 Europa">
+                                    <option value="PT">🇵🇹 Portugal</option>
+                                    <option value="ES">🇪🇸 Espanha</option>
+                                    <option value="FR">🇫🇷 França</option>
+                                    <option value="DE">🇩🇪 Alemanha</option>
+                                    <option value="GB">🇬🇧 Reino Unido</option>
+                                    <option value="IT">🇮🇹 Itália</option>
+                                    <option value="NL">🇳🇱 Holanda</option>
+                                    <option value="BE">🇧🇪 Bélgica</option>
+                                    <option value="CH">🇨🇭 Suíça</option>
+                                    <option value="AT">🇦🇹 Áustria</option>
+                                    <option value="PL">🇵🇱 Polônia</option>
+                                    <option value="RU">🇷🇺 Rússia</option>
+                                    <option value="UA">🇺🇦 Ucrânia</option>
+                                    <option value="SE">🇸🇪 Suécia</option>
+                                    <option value="NO">🇳🇴 Noruega</option>
+                                    <option value="DK">🇩🇰 Dinamarca</option>
+                                    <option value="FI">🇫🇮 Finlândia</option>
+                                    <option value="GR">🇬🇷 Grécia</option>
+                                    <option value="CZ">🇨🇿 Rep. Tcheca</option>
+                                    <option value="RO">🇷🇴 Romênia</option>
+                                    <option value="HU">🇭🇺 Hungria</option>
+                                    <option value="IE">🇮🇪 Irlanda</option>
+                                </optgroup>
+                                <optgroup label="🌏 Ásia">
+                                    <option value="JP">🇯🇵 Japão</option>
+                                    <option value="KR">🇰🇷 Coreia do Sul</option>
+                                    <option value="CN">🇨🇳 China</option>
+                                    <option value="IN">🇮🇳 Índia</option>
+                                    <option value="TH">🇹🇭 Tailândia</option>
+                                    <option value="VN">🇻🇳 Vietnã</option>
+                                    <option value="ID">🇮🇩 Indonésia</option>
+                                    <option value="PH">🇵🇭 Filipinas</option>
+                                    <option value="MY">🇲🇾 Malásia</option>
+                                    <option value="SG">🇸🇬 Singapura</option>
+                                    <option value="TR">🇹🇷 Turquia</option>
+                                    <option value="IL">🇮🇱 Israel</option>
+                                    <option value="AE">🇦🇪 Emirados Árabes</option>
+                                    <option value="SA">🇸🇦 Arábia Saudita</option>
+                                </optgroup>
+                                <optgroup label="🌍 África">
+                                    <option value="ZA">🇿🇦 África do Sul</option>
+                                    <option value="EG">🇪🇬 Egito</option>
+                                    <option value="NG">🇳🇬 Nigéria</option>
+                                    <option value="KE">🇰🇪 Quênia</option>
+                                    <option value="MA">🇲🇦 Marrocos</option>
+                                    <option value="GH">🇬🇭 Gana</option>
+                                </optgroup>
+                                <optgroup label="🌏 Oceania">
+                                    <option value="AU">🇦🇺 Austrália</option>
+                                    <option value="NZ">🇳🇿 Nova Zelândia</option>
+                                </optgroup>
                             </select>
                         </div>
                         
-                        <!-- Gêneros -->
-                        <div class="flex flex-wrap gap-2">
-                            <button onclick="filterGenre('')" class="genre-btn active px-3 py-1 rounded-full text-xs glass" data-genre="">Todos</button>
-                            <button onclick="filterGenre('pop')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="pop">Pop</button>
-                            <button onclick="filterGenre('rock')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="rock">Rock</button>
-                            <button onclick="filterGenre('hip hop')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="hip hop">Hip-Hop</button>
-                            <button onclick="filterGenre('electronic')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="electronic">Eletrônica</button>
-                            <button onclick="filterGenre('jazz')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="jazz">Jazz</button>
-                            <button onclick="filterGenre('classical')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="classical">Clássica</button>
-                            <button onclick="filterGenre('country')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="country">Country</button>
-                            <button onclick="filterGenre('reggae')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="reggae">Reggae</button>
-                            <button onclick="filterGenre('latin')" class="genre-btn px-3 py-1 rounded-full text-xs glass" data-genre="latin">Latino</button>
+                        <div class="flex flex-wrap gap-2" id="genreButtons">
+                            <!-- Gêneros serão inseridos via JS -->
                         </div>
                     </div>
 
-                    <!-- Lista de Rádios -->
                     <div class="glass rounded-2xl p-4 neon-glow">
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-lg font-semibold flex items-center">
                                 <i class="fas fa-broadcast-tower mr-2 text-cyan-400"></i>
-                                Rádios Disponíveis
+                                <span data-translate="availableRadios">Rádios Disponíveis</span>
                                 <span id="radioCount" class="ml-2 text-xs bg-cyan-500/80 px-2 py-0.5 rounded-full">0</span>
+                                <span id="onlineCount" class="ml-2 text-xs bg-green-500/80 px-2 py-0.5 rounded-full hidden">0 online</span>
                             </h2>
                             <div id="radioLoading" class="hidden">
                                 <div class="loading-spinner"></div>
@@ -323,20 +446,19 @@
                         <div id="radioList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto scrollbar-thin pr-1">
                             <p class="text-gray-400 text-center py-8 col-span-2">
                                 <i class="fas fa-broadcast-tower text-3xl mb-2 block opacity-50"></i>
-                                Carregando rádios...
+                                <span data-translate="loadingRadios">Carregando rádios...</span>
                             </p>
                         </div>
                     </div>
 
-                    <!-- Favoritos -->
                     <div class="glass rounded-2xl p-4 neon-glow mt-4">
                         <h2 class="text-lg font-semibold mb-3 flex items-center">
                             <i class="fas fa-star mr-2 text-yellow-400"></i>
-                            Rádios Favoritas
+                            <span data-translate="favoriteRadios">Rádios Favoritas</span>
                             <span id="favCount" class="ml-2 text-xs bg-yellow-500/80 px-2 py-0.5 rounded-full">0</span>
                         </h2>
                         <div id="favoriteRadios" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto scrollbar-thin pr-1">
-                            <p class="text-gray-500 text-center py-4 col-span-2 text-sm">
+                            <p class="text-gray-500 text-center py-4 col-span-2 text-sm" data-translate="noFavorites">
                                 Nenhuma rádio favorita ainda
                             </p>
                         </div>
@@ -346,7 +468,6 @@
 
             <!-- Player (Direita) -->
             <div class="space-y-4">
-                <!-- Player Principal -->
                 <div class="glass rounded-2xl p-4 neon-glow">
                     <div class="text-center mb-4">
                         <div id="albumArt" class="w-32 h-32 mx-auto bg-gradient-to-br from-cyan-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-3 shadow-2xl">
@@ -354,13 +475,15 @@
                         </div>
                         <div class="flex items-center justify-center gap-2 mb-1">
                             <div id="liveIndicator" class="live-indicator hidden"></div>
-                            <span id="liveText" class="text-xs text-red-400 hidden">AO VIVO</span>
+                            <span id="liveText" class="text-xs text-red-400 hidden" data-translate="live">AO VIVO</span>
                         </div>
-                        <h3 id="currentTitle" class="text-base font-semibold truncate px-2">Nenhuma música</h3>
-                        <p id="currentArtist" class="text-gray-400 text-xs truncate">Selecione uma música ou rádio</p>
+                        <h3 id="currentTitle" class="text-base font-semibold truncate px-2" data-translate="noSong">Nenhuma música</h3>
+                        <p id="currentArtist" class="text-gray-400 text-xs truncate" data-translate="selectSong">Selecione uma música ou rádio</p>
+                        <div id="radioStatusContainer" class="hidden mt-2">
+                            <span id="radioStatus" class="text-xs px-2 py-1 rounded-full"></span>
+                        </div>
                     </div>
 
-                    <!-- Progresso (só para músicas locais) -->
                     <div id="progressContainer" class="mb-4">
                         <input type="range" id="progressBar" value="0" min="0" max="100" step="0.1" class="w-full">
                         <div class="flex justify-between text-xs text-gray-400 mt-1">
@@ -369,7 +492,6 @@
                         </div>
                     </div>
 
-                    <!-- Controles -->
                     <div class="flex justify-center items-center gap-3 mb-4">
                         <button id="shuffleBtn" onclick="toggleShuffle()" class="control-btn text-xl p-2 hover:text-cyan-400 transition" title="Aleatório">
                             <i class="fas fa-random"></i>
@@ -388,7 +510,6 @@
                         </button>
                     </div>
 
-                    <!-- Volume -->
                     <div class="flex items-center gap-3">
                         <button onclick="toggleMute()" class="text-gray-400 hover:text-white transition">
                             <i id="volumeIcon" class="fas fa-volume-up"></i>
@@ -398,54 +519,50 @@
                     </div>
                 </div>
 
-                <!-- Opções -->
                 <div class="glass rounded-2xl p-4 neon-glow">
                     <h2 class="text-base font-semibold mb-3 flex items-center">
                         <i class="fas fa-sliders-h mr-2 text-cyan-400"></i>
-                        Opções
+                        <span data-translate="options">Opções</span>
                     </h2>
                     <div class="space-y-2 text-sm">
                         <label class="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-white/5">
-                            <span><i class="fas fa-redo-alt mr-2 text-purple-400"></i>Repetir Música</span>
+                            <span><i class="fas fa-redo-alt mr-2 text-purple-400"></i><span data-translate="repeatSong">Repetir Música</span></span>
                             <input type="checkbox" id="repeatOne" class="w-4 h-4 accent-cyan-500">
                         </label>
                         <label class="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-white/5">
-                            <span><i class="fas fa-sync mr-2 text-cyan-400"></i>Repetir Playlist</span>
+                            <span><i class="fas fa-sync mr-2 text-cyan-400"></i><span data-translate="repeatPlaylist">Repetir Playlist</span></span>
                             <input type="checkbox" id="repeatPlaylist" checked class="w-4 h-4 accent-cyan-500">
                         </label>
                         <label class="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-white/5">
-                            <span><i class="fas fa-random mr-2 text-pink-400"></i>Modo Aleatório</span>
+                            <span><i class="fas fa-random mr-2 text-pink-400"></i><span data-translate="shuffleMode">Modo Aleatório</span></span>
                             <input type="checkbox" id="shuffleMode" class="w-4 h-4 accent-cyan-500">
                         </label>
                     </div>
                 </div>
 
-                <!-- Info da Rádio Atual -->
                 <div id="radioInfo" class="glass rounded-2xl p-4 neon-glow hidden">
                     <h2 class="text-base font-semibold mb-3 flex items-center">
                         <i class="fas fa-info-circle mr-2 text-cyan-400"></i>
-                        Sobre a Rádio
+                        <span data-translate="aboutRadio">Sobre a Rádio</span>
                     </h2>
                     <div class="text-sm space-y-2">
-                        <p><span class="text-gray-400">País:</span> <span id="radioCountry">-</span></p>
-                        <p><span class="text-gray-400">Gênero:</span> <span id="radioGenre">-</span></p>
-                        <p><span class="text-gray-400">Bitrate:</span> <span id="radioBitrate">-</span></p>
+                        <p><span class="text-gray-400" data-translate="country">País:</span> <span id="radioCountry">-</span></p>
+                        <p><span class="text-gray-400" data-translate="genre">Gênero:</span> <span id="radioGenre">-</span></p>
+                        <p><span class="text-gray-400" data-translate="bitrate">Bitrate:</span> <span id="radioBitrate">-</span></p>
                         <a id="radioWebsite" href="#" target="_blank" class="text-cyan-400 hover:underline block mt-2">
-                            <i class="fas fa-external-link-alt mr-1"></i>Visitar site
+                            <i class="fas fa-external-link-alt mr-1"></i><span data-translate="visitSite">Visitar site</span>
                         </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Visualizador -->
         <div class="glass rounded-2xl p-3 mt-4 neon-glow">
             <div id="visualizer" class="flex justify-center items-end h-10 gap-0.5"></div>
         </div>
 
-        <!-- Footer -->
         <footer class="text-center mt-4 text-gray-500 text-xs">
-            <p>🎵 RadioMC - Músicas locais + Rádios do mundo todo</p>
+            <p>🎵 RadioMC - <span data-translate="footer">Músicas locais + Rádios do mundo todo</span></p>
         </footer>
     </div>
 
@@ -453,16 +570,1027 @@
 
     <script>
         // =============================================
-        // CONFIGURAÇÕES
+        // TRADUÇÕES COMPLETAS
         // =============================================
-        const RADIO_API = 'https://de1.api.radio-browser.info/json';
-        const DB_NAME = 'RadioMC_DB_v4';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'musicFiles';
+        const translations = {
+            pt: {
+                subtitle: "Sua biblioteca musical + Rádios do mundo",
+                library: "Biblioteca",
+                radiosOnline: "Rádios Online",
+                addMusic: "Adicionar Músicas",
+                dragHere: "Arraste músicas aqui",
+                clickToSelect: "ou clique para selecionar",
+                processing: "Processando...",
+                myMusic: "Minhas Músicas",
+                play: "Tocar",
+                shuffle: "Aleatório",
+                clear: "Limpar",
+                noMusic: "Nenhuma música adicionada",
+                searchRadio: "Buscar rádio...",
+                allCountries: "🌍 Todos os países",
+                all: "Todos",
+                availableRadios: "Rádios Disponíveis",
+                loadingRadios: "Carregando rádios...",
+                noRadioFound: "Nenhuma rádio encontrada",
+                favoriteRadios: "Rádios Favoritas",
+                noFavorites: "Nenhuma rádio favorita ainda",
+                noSong: "Nenhuma música",
+                selectSong: "Selecione uma música ou rádio",
+                live: "AO VIVO",
+                options: "Opções",
+                repeatSong: "Repetir Música",
+                repeatPlaylist: "Repetir Playlist",
+                shuffleMode: "Modo Aleatório",
+                aboutRadio: "Sobre a Rádio",
+                country: "País:",
+                genre: "Gênero:",
+                bitrate: "Bitrate:",
+                visitSite: "Visitar site",
+                footer: "Músicas locais + Rádios do mundo todo",
+                ready: "🎵 RadioMC pronto!",
+                musicAdded: "música(s) adicionada(s)!",
+                removed: "Removido dos favoritos",
+                added: "⭐ Adicionado aos favoritos!",
+                addFirst: "Adicione músicas primeiro!",
+                shuffleOn: "🔀 Aleatório ativado",
+                shuffleOff: "🔀 Aleatório desativado",
+                repeatOff: "🔁 Repetição desativada",
+                repeatOne: "🔂 Repetir música",
+                repeatAll: "🔁 Repetir playlist",
+                musicRemoved: "Música removida",
+                libraryEmpty: "Biblioteca já vazia",
+                confirmClear: "Remover todas as músicas?",
+                libraryCleared: "Biblioteca limpa!",
+                radioOffline: "📡 Rádio offline",
+                radioOnline: "🟢 Online",
+                radioError: "❌ Erro ao conectar",
+                connecting: "Conectando...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Eletrônica",
+                    dance: "Dance", house: "House", jazz: "Jazz", classical: "Clássica",
+                    country: "Country", reggae: "Reggae", latin: "Latino", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "Notícias", talk: "Talk"
+                }
+            },
+            en: {
+                subtitle: "Your music library + World radios",
+                library: "Library",
+                radiosOnline: "Online Radios",
+                addMusic: "Add Music",
+                dragHere: "Drag music here",
+                clickToSelect: "or click to select",
+                processing: "Processing...",
+                myMusic: "My Music",
+                play: "Play",
+                shuffle: "Shuffle",
+                clear: "Clear",
+                noMusic: "No music added",
+                searchRadio: "Search radio...",
+                allCountries: "🌍 All countries",
+                all: "All",
+                availableRadios: "Available Radios",
+                loadingRadios: "Loading radios...",
+                noRadioFound: "No radio found",
+                favoriteRadios: "Favorite Radios",
+                noFavorites: "No favorite radios yet",
+                noSong: "No song",
+                selectSong: "Select a song or radio",
+                live: "LIVE",
+                options: "Options",
+                repeatSong: "Repeat Song",
+                repeatPlaylist: "Repeat Playlist",
+                shuffleMode: "Shuffle Mode",
+                aboutRadio: "About Radio",
+                country: "Country:",
+                genre: "Genre:",
+                bitrate: "Bitrate:",
+                visitSite: "Visit website",
+                footer: "Local music + Radios from around the world",
+                ready: "🎵 RadioMC ready!",
+                musicAdded: "song(s) added!",
+                removed: "Removed from favorites",
+                added: "⭐ Added to favorites!",
+                addFirst: "Add music first!",
+                shuffleOn: "🔀 Shuffle enabled",
+                shuffleOff: "🔀 Shuffle disabled",
+                repeatOff: "🔁 Repeat disabled",
+                repeatOne: "🔂 Repeat song",
+                repeatAll: "🔁 Repeat playlist",
+                musicRemoved: "Music removed",
+                libraryEmpty: "Library already empty",
+                confirmClear: "Remove all music?",
+                libraryCleared: "Library cleared!",
+                radioOffline: "📡 Radio offline",
+                radioOnline: "🟢 Online",
+                radioError: "❌ Connection error",
+                connecting: "Connecting...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Electronic",
+                    dance: "Dance", house: "House", jazz: "Jazz", classical: "Classical",
+                    country: "Country", reggae: "Reggae", latin: "Latin", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "News", talk: "Talk"
+                }
+            },
+            es: {
+                subtitle: "Tu biblioteca musical + Radios del mundo",
+                library: "Biblioteca",
+                radiosOnline: "Radios Online",
+                addMusic: "Agregar Música",
+                dragHere: "Arrastra música aquí",
+                clickToSelect: "o haz clic para seleccionar",
+                processing: "Procesando...",
+                myMusic: "Mi Música",
+                play: "Reproducir",
+                shuffle: "Aleatorio",
+                clear: "Limpiar",
+                noMusic: "No hay música agregada",
+                searchRadio: "Buscar radio...",
+                allCountries: "🌍 Todos los países",
+                all: "Todos",
+                availableRadios: "Radios Disponibles",
+                loadingRadios: "Cargando radios...",
+                noRadioFound: "No se encontró radio",
+                favoriteRadios: "Radios Favoritas",
+                noFavorites: "Sin radios favoritas aún",
+                noSong: "Sin música",
+                selectSong: "Selecciona una canción o radio",
+                live: "EN VIVO",
+                options: "Opciones",
+                repeatSong: "Repetir Canción",
+                repeatPlaylist: "Repetir Lista",
+                shuffleMode: "Modo Aleatorio",
+                aboutRadio: "Sobre la Radio",
+                country: "País:",
+                genre: "Género:",
+                bitrate: "Bitrate:",
+                visitSite: "Visitar sitio",
+                footer: "Música local + Radios de todo el mundo",
+                ready: "🎵 ¡RadioMC listo!",
+                musicAdded: "¡canción(es) agregada(s)!",
+                removed: "Eliminado de favoritos",
+                added: "⭐ ¡Agregado a favoritos!",
+                addFirst: "¡Agrega música primero!",
+                shuffleOn: "🔀 Aleatorio activado",
+                shuffleOff: "🔀 Aleatorio desactivado",
+                repeatOff: "🔁 Repetición desactivada",
+                repeatOne: "🔂 Repetir canción",
+                repeatAll: "🔁 Repetir lista",
+                musicRemoved: "Música eliminada",
+                libraryEmpty: "Biblioteca ya vacía",
+                confirmClear: "¿Eliminar toda la música?",
+                libraryCleared: "¡Biblioteca limpia!",
+                radioOffline: "📡 Radio sin conexión",
+                radioOnline: "🟢 En línea",
+                radioError: "❌ Error de conexión",
+                connecting: "Conectando...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Electrónica",
+                    dance: "Dance", house: "House", jazz: "Jazz", classical: "Clásica",
+                    country: "Country", reggae: "Reggae", latin: "Latino", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "Noticias", talk: "Talk"
+                }
+            },
+            fr: {
+                subtitle: "Votre bibliothèque musicale + Radios du monde",
+                library: "Bibliothèque",
+                radiosOnline: "Radios en Ligne",
+                addMusic: "Ajouter Musique",
+                dragHere: "Glissez la musique ici",
+                clickToSelect: "ou cliquez pour sélectionner",
+                processing: "Traitement...",
+                myMusic: "Ma Musique",
+                play: "Lecture",
+                shuffle: "Aléatoire",
+                clear: "Effacer",
+                noMusic: "Aucune musique ajoutée",
+                searchRadio: "Rechercher radio...",
+                allCountries: "🌍 Tous les pays",
+                all: "Tous",
+                availableRadios: "Radios Disponibles",
+                loadingRadios: "Chargement des radios...",
+                noRadioFound: "Aucune radio trouvée",
+                favoriteRadios: "Radios Favorites",
+                noFavorites: "Pas encore de radios favorites",
+                noSong: "Aucune musique",
+                selectSong: "Sélectionnez une chanson ou radio",
+                live: "EN DIRECT",
+                options: "Options",
+                repeatSong: "Répéter Chanson",
+                repeatPlaylist: "Répéter Playlist",
+                shuffleMode: "Mode Aléatoire",
+                aboutRadio: "À propos de la Radio",
+                country: "Pays:",
+                genre: "Genre:",
+                bitrate: "Débit:",
+                visitSite: "Visiter le site",
+                footer: "Musique locale + Radios du monde entier",
+                ready: "🎵 RadioMC prêt!",
+                musicAdded: "chanson(s) ajoutée(s)!",
+                removed: "Retiré des favoris",
+                added: "⭐ Ajouté aux favoris!",
+                addFirst: "Ajoutez d'abord de la musique!",
+                shuffleOn: "🔀 Aléatoire activé",
+                shuffleOff: "🔀 Aléatoire désactivé",
+                repeatOff: "🔁 Répétition désactivée",
+                repeatOne: "🔂 Répéter chanson",
+                repeatAll: "🔁 Répéter playlist",
+                musicRemoved: "Musique supprimée",
+                libraryEmpty: "Bibliothèque déjà vide",
+                confirmClear: "Supprimer toute la musique?",
+                libraryCleared: "Bibliothèque vidée!",
+                radioOffline: "📡 Radio hors ligne",
+                radioOnline: "🟢 En ligne",
+                radioError: "❌ Erreur de connexion",
+                connecting: "Connexion...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Électronique",
+                    dance: "Dance", house: "House", jazz: "Jazz", classical: "Classique",
+                    country: "Country", reggae: "Reggae", latin: "Latino", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "Actualités", talk: "Talk"
+                }
+            },
+            de: {
+                subtitle: "Deine Musikbibliothek + Weltradios",
+                library: "Bibliothek",
+                radiosOnline: "Online Radios",
+                addMusic: "Musik Hinzufügen",
+                dragHere: "Musik hierher ziehen",
+                clickToSelect: "oder klicken zum Auswählen",
+                processing: "Verarbeitung...",
+                myMusic: "Meine Musik",
+                play: "Abspielen",
+                shuffle: "Zufällig",
+                clear: "Löschen",
+                noMusic: "Keine Musik hinzugefügt",
+                searchRadio: "Radio suchen...",
+                allCountries: "🌍 Alle Länder",
+                all: "Alle",
+                availableRadios: "Verfügbare Radios",
+                loadingRadios: "Radios laden...",
+                noRadioFound: "Kein Radio gefunden",
+                favoriteRadios: "Lieblingsradios",
+                noFavorites: "Noch keine Lieblingsradios",
+                noSong: "Keine Musik",
+                selectSong: "Wähle Lied oder Radio",
+                live: "LIVE",
+                options: "Optionen",
+                repeatSong: "Lied Wiederholen",
+                repeatPlaylist: "Playlist Wiederholen",
+                shuffleMode: "Zufallsmodus",
+                aboutRadio: "Über das Radio",
+                country: "Land:",
+                genre: "Genre:",
+                bitrate: "Bitrate:",
+                visitSite: "Website besuchen",
+                footer: "Lokale Musik + Radios aus aller Welt",
+                ready: "🎵 RadioMC bereit!",
+                musicAdded: "Lied(er) hinzugefügt!",
+                removed: "Aus Favoriten entfernt",
+                added: "⭐ Zu Favoriten hinzugefügt!",
+                addFirst: "Füge zuerst Musik hinzu!",
+                shuffleOn: "🔀 Zufällig aktiviert",
+                shuffleOff: "🔀 Zufällig deaktiviert",
+                repeatOff: "🔁 Wiederholung deaktiviert",
+                repeatOne: "🔂 Lied wiederholen",
+                repeatAll: "🔁 Playlist wiederholen",
+                musicRemoved: "Musik entfernt",
+                libraryEmpty: "Bibliothek bereits leer",
+                confirmClear: "Alle Musik löschen?",
+                libraryCleared: "Bibliothek geleert!",
+                radioOffline: "📡 Radio offline",
+                radioOnline: "🟢 Online",
+                radioError: "❌ Verbindungsfehler",
+                connecting: "Verbinden...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elektronisch",
+                    dance: "Dance", house: "House", jazz: "Jazz", classical: "Klassik",
+                    country: "Country", reggae: "Reggae", latin: "Latino", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "Nachrichten", talk: "Talk"
+                }
+            },
+            it: {
+                subtitle: "La tua libreria musicale + Radio mondiali",
+                library: "Libreria",
+                radiosOnline: "Radio Online",
+                addMusic: "Aggiungi Musica",
+                dragHere: "Trascina la musica qui",
+                clickToSelect: "o clicca per selezionare",
+                processing: "Elaborazione...",
+                myMusic: "La Mia Musica",
+                play: "Riproduci",
+                shuffle: "Casuale",
+                clear: "Cancella",
+                noMusic: "Nessuna musica aggiunta",
+                searchRadio: "Cerca radio...",
+                allCountries: "🌍 Tutti i paesi",
+                all: "Tutti",
+                availableRadios: "Radio Disponibili",
+                loadingRadios: "Caricamento radio...",
+                noRadioFound: "Nessuna radio trovata",
+                favoriteRadios: "Radio Preferite",
+                noFavorites: "Nessuna radio preferita",
+                noSong: "Nessuna musica",
+                selectSong: "Seleziona brano o radio",
+                live: "DAL VIVO",
+                options: "Opzioni",
+                repeatSong: "Ripeti Brano",
+                repeatPlaylist: "Ripeti Playlist",
+                shuffleMode: "Modalità Casuale",
+                aboutRadio: "Info Radio",
+                country: "Paese:",
+                genre: "Genere:",
+                bitrate: "Bitrate:",
+                visitSite: "Visita sito",
+                footer: "Musica locale + Radio da tutto il mondo",
+                ready: "🎵 RadioMC pronto!",
+                musicAdded: "brano/i aggiunto/i!",
+                removed: "Rimosso dai preferiti",
+                added: "⭐ Aggiunto ai preferiti!",
+                addFirst: "Aggiungi prima la musica!",
+                shuffleOn: "🔀 Casuale attivato",
+                shuffleOff: "🔀 Casuale disattivato",
+                repeatOff: "🔁 Ripetizione disattivata",
+                repeatOne: "🔂 Ripeti brano",
+                repeatAll: "🔁 Ripeti playlist",
+                musicRemoved: "Musica rimossa",
+                libraryEmpty: "Libreria già vuota",
+                confirmClear: "Rimuovere tutta la musica?",
+                libraryCleared: "Libreria svuotata!",
+                radioOffline: "📡 Radio offline",
+                radioOnline: "🟢 Online",
+                radioError: "❌ Errore connessione",
+                connecting: "Connessione...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elettronica",
+                    dance: "Dance", house: "House", jazz: "Jazz", classical: "Classica",
+                    country: "Country", reggae: "Reggae", latin: "Latino", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "Notizie", talk: "Talk"
+                }
+            },
+            ja: {
+                subtitle: "音楽ライブラリ + 世界のラジオ",
+                library: "ライブラリ",
+                radiosOnline: "オンラインラジオ",
+                addMusic: "音楽を追加",
+                dragHere: "ここに音楽をドラッグ",
+                clickToSelect: "またはクリックして選択",
+                processing: "処理中...",
+                myMusic: "マイミュージック",
+                play: "再生",
+                shuffle: "シャッフル",
+                clear: "クリア",
+                noMusic: "音楽がありません",
+                searchRadio: "ラジオを検索...",
+                allCountries: "🌍 すべての国",
+                all: "すべて",
+                availableRadios: "利用可能なラジオ",
+                loadingRadios: "ラジオを読み込み中...",
+                noRadioFound: "ラジオが見つかりません",
+                favoriteRadios: "お気に入りのラジオ",
+                noFavorites: "お気に入りはまだありません",
+                noSong: "曲がありません",
+                selectSong: "曲またはラジオを選択",
+                live: "ライブ",
+                options: "オプション",
+                repeatSong: "曲をリピート",
+                repeatPlaylist: "プレイリストをリピート",
+                shuffleMode: "シャッフルモード",
+                aboutRadio: "ラジオについて",
+                country: "国:",
+                genre: "ジャンル:",
+                bitrate: "ビットレート:",
+                visitSite: "サイトを訪問",
+                footer: "ローカル音楽 + 世界のラジオ",
+                ready: "🎵 RadioMC準備完了！",
+                musicAdded: "曲が追加されました！",
+                removed: "お気に入りから削除",
+                added: "⭐ お気に入りに追加！",
+                addFirst: "まず音楽を追加！",
+                shuffleOn: "🔀 シャッフル有効",
+                shuffleOff: "🔀 シャッフル無効",
+                repeatOff: "🔁 リピート無効",
+                repeatOne: "🔂 曲をリピート",
+                repeatAll: "🔁 プレイリストをリピート",
+                musicRemoved: "音楽が削除されました",
+                libraryEmpty: "ライブラリは既に空です",
+                confirmClear: "すべての音楽を削除？",
+                libraryCleared: "ライブラリがクリア！",
+                radioOffline: "📡 ラジオオフライン",
+                radioOnline: "🟢 オンライン",
+                radioError: "❌ 接続エラー",
+                connecting: "接続中...",
+                genres: {
+                    pop: "ポップ", rock: "ロック", "hip hop": "ヒップホップ", electronic: "エレクトロニック",
+                    dance: "ダンス", house: "ハウス", jazz: "ジャズ", classical: "クラシック",
+                    country: "カントリー", reggae: "レゲエ", latin: "ラテン", sertanejo: "セルタネージョ",
+                    funk: "ファンク", gospel: "ゴスペル", metal: "メタル", "r&b": "R&B",
+                    blues: "ブルース", kpop: "K-Pop", anime: "アニメ", news: "ニュース", talk: "トーク"
+                }
+            },
+            ko: {
+                subtitle: "음악 라이브러리 + 세계 라디오",
+                library: "라이브러리",
+                radiosOnline: "온라인 라디오",
+                addMusic: "음악 추가",
+                dragHere: "여기에 음악을 드래그",
+                clickToSelect: "또는 클릭하여 선택",
+                processing: "처리 중...",
+                myMusic: "내 음악",
+                play: "재생",
+                shuffle: "셔플",
+                clear: "지우기",
+                noMusic: "추가된 음악 없음",
+                searchRadio: "라디오 검색...",
+                allCountries: "🌍 모든 국가",
+                all: "모두",
+                availableRadios: "사용 가능한 라디오",
+                loadingRadios: "라디오 로딩 중...",
+                noRadioFound: "라디오를 찾을 수 없음",
+                favoriteRadios: "즐겨찾기 라디오",
+                noFavorites: "즐겨찾기 없음",
+                noSong: "음악 없음",
+                selectSong: "노래 또는 라디오 선택",
+                live: "라이브",
+                options: "옵션",
+                repeatSong: "노래 반복",
+                repeatPlaylist: "플레이리스트 반복",
+                shuffleMode: "셔플 모드",
+                aboutRadio: "라디오 정보",
+                country: "국가:",
+                genre: "장르:",
+                bitrate: "비트레이트:",
+                visitSite: "사이트 방문",
+                footer: "로컬 음악 + 세계 라디오",
+                ready: "🎵 RadioMC 준비 완료!",
+                musicAdded: "곡이 추가되었습니다!",
+                removed: "즐겨찾기에서 제거됨",
+                added: "⭐ 즐겨찾기에 추가!",
+                addFirst: "먼저 음악을 추가하세요!",
+                shuffleOn: "🔀 셔플 활성화",
+                shuffleOff: "🔀 셔플 비활성화",
+                repeatOff: "🔁 반복 비활성화",
+                repeatOne: "🔂 노래 반복",
+                repeatAll: "🔁 플레이리스트 반복",
+                musicRemoved: "음악 제거됨",
+                libraryEmpty: "라이브러리가 이미 비어 있음",
+                confirmClear: "모든 음악을 삭제?",
+                libraryCleared: "라이브러리 비움!",
+                radioOffline: "📡 라디오 오프라인",
+                radioOnline: "🟢 온라인",
+                radioError: "❌ 연결 오류",
+                connecting: "연결 중...",
+                genres: {
+                    pop: "팝", rock: "록", "hip hop": "힙합", electronic: "일렉트로닉",
+                    dance: "댄스", house: "하우스", jazz: "재즈", classical: "클래식",
+                    country: "컨트리", reggae: "레게", latin: "라틴", sertanejo: "세르타네주",
+                    funk: "펑크", gospel: "가스펠", metal: "메탈", "r&b": "R&B",
+                    blues: "블루스", kpop: "K-Pop", anime: "애니메이션", news: "뉴스", talk: "토크"
+                }
+            },
+            zh: {
+                subtitle: "您的音乐库 + 全球广播",
+                library: "音乐库",
+                radiosOnline: "在线广播",
+                addMusic: "添加音乐",
+                dragHere: "拖放音乐到这里",
+                clickToSelect: "或点击选择",
+                processing: "处理中...",
+                myMusic: "我的音乐",
+                play: "播放",
+                shuffle: "随机",
+                clear: "清除",
+                noMusic: "没有添加音乐",
+                searchRadio: "搜索广播...",
+                allCountries: "🌍 所有国家",
+                all: "全部",
+                availableRadios: "可用广播",
+                loadingRadios: "加载广播中...",
+                noRadioFound: "未找到广播",
+                favoriteRadios: "收藏的广播",
+                noFavorites: "还没有收藏",
+                noSong: "没有音乐",
+                selectSong: "选择歌曲或广播",
+                live: "直播",
+                options: "选项",
+                repeatSong: "重复歌曲",
+                repeatPlaylist: "重复播放列表",
+                shuffleMode: "随机模式",
+                aboutRadio: "广播信息",
+                country: "国家:",
+                genre: "类型:",
+                bitrate: "比特率:",
+                visitSite: "访问网站",
+                footer: "本地音乐 + 全球广播",
+                ready: "🎵 RadioMC准备就绪！",
+                musicAdded: "首歌曲已添加！",
+                removed: "已从收藏中移除",
+                added: "⭐ 已添加到收藏！",
+                addFirst: "请先添加音乐！",
+                shuffleOn: "🔀 随机已启用",
+                shuffleOff: "🔀 随机已禁用",
+                repeatOff: "🔁 重复已禁用",
+                repeatOne: "🔂 重复歌曲",
+                repeatAll: "🔁 重复播放列表",
+                musicRemoved: "音乐已移除",
+                libraryEmpty: "音乐库已为空",
+                confirmClear: "删除所有音乐？",
+                libraryCleared: "音乐库已清空！",
+                radioOffline: "📡 广播离线",
+                radioOnline: "🟢 在线",
+                radioError: "❌ 连接错误",
+                connecting: "连接中...",
+                genres: {
+                    pop: "流行", rock: "摇滚", "hip hop": "嘻哈", electronic: "电子",
+                    dance: "舞曲", house: "浩室", jazz: "爵士", classical: "古典",
+                    country: "乡村", reggae: "雷鬼", latin: "拉丁", sertanejo: "巴西乡村",
+                    funk: "放克", gospel: "福音", metal: "金属", "r&b": "R&B",
+                    blues: "蓝调", kpop: "韩流", anime: "动漫", news: "新闻", talk: "脱口秀"
+                }
+            },
+            ru: {
+                subtitle: "Ваша музыкальная библиотека + Мировое радио",
+                library: "Библиотека",
+                radiosOnline: "Онлайн Радио",
+                addMusic: "Добавить Музыку",
+                dragHere: "Перетащите музыку сюда",
+                clickToSelect: "или нажмите для выбора",
+                processing: "Обработка...",
+                myMusic: "Моя Музыка",
+                play: "Воспроизвести",
+                shuffle: "Случайно",
+                clear: "Очистить",
+                noMusic: "Музыка не добавлена",
+                searchRadio: "Поиск радио...",
+                allCountries: "🌍 Все страны",
+                all: "Все",
+                availableRadios: "Доступные Радио",
+                loadingRadios: "Загрузка радио...",
+                noRadioFound: "Радио не найдено",
+                favoriteRadios: "Избранные Радио",
+                noFavorites: "Пока нет избранных",
+                noSong: "Нет музыки",
+                selectSong: "Выберите песню или радио",
+                live: "ПРЯМОЙ ЭФИР",
+                options: "Настройки",
+                repeatSong: "Повторить Песню",
+                repeatPlaylist: "Повторить Плейлист",
+                shuffleMode: "Случайный Режим",
+                aboutRadio: "О Радио",
+                country: "Страна:",
+                genre: "Жанр:",
+                bitrate: "Битрейт:",
+                visitSite: "Посетить сайт",
+                footer: "Локальная музыка + Радио со всего мира",
+                ready: "🎵 RadioMC готов!",
+                musicAdded: "песня(и) добавлена!",
+                removed: "Удалено из избранного",
+                added: "⭐ Добавлено в избранное!",
+                addFirst: "Сначала добавьте музыку!",
+                shuffleOn: "🔀 Случайный включен",
+                shuffleOff: "🔀 Случайный выключен",
+                repeatOff: "🔁 Повтор выключен",
+                repeatOne: "🔂 Повторить песню",
+                repeatAll: "🔁 Повторить плейлист",
+                musicRemoved: "Музыка удалена",
+                libraryEmpty: "Библиотека уже пуста",
+                confirmClear: "Удалить всю музыку?",
+                libraryCleared: "Библиотека очищена!",
+                radioOffline: "📡 Радио офлайн",
+                radioOnline: "🟢 Онлайн",
+                radioError: "❌ Ошибка соединения",
+                connecting: "Подключение...",
+                genres: {
+                    pop: "Поп", rock: "Рок", "hip hop": "Хип-Хоп", electronic: "Электронная",
+                    dance: "Дэнс", house: "Хаус", jazz: "Джаз", classical: "Классика",
+                    country: "Кантри", reggae: "Регги", latin: "Латино", sertanejo: "Сертанежу",
+                    funk: "Фанк", gospel: "Госпел", metal: "Метал", "r&b": "R&B",
+                    blues: "Блюз", kpop: "K-Pop", anime: "Аниме", news: "Новости", talk: "Ток-шоу"
+                }
+            },
+            ar: {
+                subtitle: "مكتبتك الموسيقية + راديو عالمي",
+                library: "المكتبة",
+                radiosOnline: "راديو أونلاين",
+                addMusic: "إضافة موسيقى",
+                dragHere: "اسحب الموسيقى هنا",
+                clickToSelect: "أو انقر للاختيار",
+                processing: "جاري المعالجة...",
+                myMusic: "موسيقاي",
+                play: "تشغيل",
+                shuffle: "عشوائي",
+                clear: "مسح",
+                noMusic: "لم تتم إضافة موسيقى",
+                searchRadio: "بحث راديو...",
+                allCountries: "🌍 جميع البلدان",
+                all: "الكل",
+                availableRadios: "الراديو المتاح",
+                loadingRadios: "جاري تحميل الراديو...",
+                noRadioFound: "لم يتم العثور على راديو",
+                favoriteRadios: "الراديو المفضل",
+                noFavorites: "لا يوجد مفضلات بعد",
+                noSong: "لا توجد موسيقى",
+                selectSong: "اختر أغنية أو راديو",
+                live: "مباشر",
+                options: "خيارات",
+                repeatSong: "تكرار الأغنية",
+                repeatPlaylist: "تكرار القائمة",
+                shuffleMode: "الوضع العشوائي",
+                aboutRadio: "عن الراديو",
+                country: "البلد:",
+                genre: "النوع:",
+                bitrate: "معدل البت:",
+                visitSite: "زيارة الموقع",
+                footer: "موسيقى محلية + راديو من جميع أنحاء العالم",
+                ready: "🎵 !RadioMC جاهز",
+                musicAdded: "!تمت إضافة أغنية",
+                removed: "تمت الإزالة من المفضلة",
+                added: "⭐ !تمت الإضافة للمفضلة",
+                addFirst: "!أضف موسيقى أولاً",
+                shuffleOn: "🔀 تم تفعيل العشوائي",
+                shuffleOff: "🔀 تم إلغاء العشوائي",
+                repeatOff: "🔁 تم إلغاء التكرار",
+                repeatOne: "🔂 تكرار الأغنية",
+                repeatAll: "🔁 تكرار القائمة",
+                musicRemoved: "تمت إزالة الموسيقى",
+                libraryEmpty: "المكتبة فارغة بالفعل",
+                confirmClear: "حذف كل الموسيقى؟",
+                libraryCleared: "!تم مسح المكتبة",
+                radioOffline: "📡 راديو غير متصل",
+                radioOnline: "🟢 متصل",
+                radioError: "❌ خطأ في الاتصال",
+                connecting: "...جاري الاتصال",
+                genres: {
+                    pop: "بوب", rock: "روك", "hip hop": "هيب هوب", electronic: "إلكترونية",
+                    dance: "رقص", house: "هاوس", jazz: "جاز", classical: "كلاسيكية",
+                    country: "كانتري", reggae: "ريغي", latin: "لاتيني", sertanejo: "سيرتانيجو",
+                    funk: "فانك", gospel: "غوسبل", metal: "ميتال", "r&b": "آر أند بي",
+                    blues: "بلوز", kpop: "كي-بوب", anime: "أنمي", news: "أخبار", talk: "حوار"
+                }
+            },
+            hi: {
+                subtitle: "आपका संगीत पुस्तकालय + विश्व रेडियो",
+                library: "पुस्तकालय",
+                radiosOnline: "ऑनलाइन रेडियो",
+                addMusic: "संगीत जोड़ें",
+                dragHere: "यहां संगीत खींचें",
+                clickToSelect: "या चुनने के लिए क्लिक करें",
+                processing: "प्रसंस्करण...",
+                myMusic: "मेरा संगीत",
+                play: "बजाएं",
+                shuffle: "शफल",
+                clear: "साफ़",
+                noMusic: "कोई संगीत नहीं जोड़ा",
+                searchRadio: "रेडियो खोजें...",
+                allCountries: "🌍 सभी देश",
+                all: "सभी",
+                availableRadios: "उपलब्ध रेडियो",
+                loadingRadios: "रेडियो लोड हो रहा है...",
+                noRadioFound: "कोई रेडियो नहीं मिला",
+                favoriteRadios: "पसंदीदा रेडियो",
+                noFavorites: "अभी तक कोई पसंदीदा नहीं",
+                noSong: "कोई संगीत नहीं",
+                selectSong: "गाना या रेडियो चुनें",
+                live: "लाइव",
+                options: "विकल्प",
+                repeatSong: "गाना दोहराएं",
+                repeatPlaylist: "प्लेलिस्ट दोहराएं",
+                shuffleMode: "शफल मोड",
+                aboutRadio: "रेडियो के बारे में",
+                country: "देश:",
+                genre: "शैली:",
+                bitrate: "बिटरेट:",
+                visitSite: "साइट पर जाएं",
+                footer: "स्थानीय संगीत + दुनिया भर से रेडियो",
+                ready: "🎵 RadioMC तैयार!",
+                musicAdded: "गाने जोड़े गए!",
+                removed: "पसंदीदा से हटाया गया",
+                added: "⭐ पसंदीदा में जोड़ा!",
+                addFirst: "पहले संगीत जोड़ें!",
+                shuffleOn: "🔀 शफल चालू",
+                shuffleOff: "🔀 शफल बंद",
+                repeatOff: "🔁 दोहराना बंद",
+                repeatOne: "🔂 गाना दोहराएं",
+                repeatAll: "🔁 प्लेलिस्ट दोहराएं",
+                musicRemoved: "संगीत हटाया गया",
+                libraryEmpty: "पुस्तकालय पहले से खाली",
+                confirmClear: "सभी संगीत हटाएं?",
+                libraryCleared: "पुस्तकालय साफ़!",
+                radioOffline: "📡 रेडियो ऑफ़लाइन",
+                radioOnline: "🟢 ऑनलाइन",
+                radioError: "❌ कनेक्शन त्रुटि",
+                connecting: "कनेक्ट हो रहा है...",
+                genres: {
+                    pop: "पॉप", rock: "रॉक", "hip hop": "हिप-हॉप", electronic: "इलेक्ट्रॉनिक",
+                    dance: "डांस", house: "हाउस", jazz: "जैज़", classical: "शास्त्रीय",
+                    country: "कंट्री", reggae: "रेगे", latin: "लैटिन", sertanejo: "सेर्टानेजो",
+                    funk: "फंक", gospel: "गॉस्पेल", metal: "मेटल", "r&b": "आर एंड बी",
+                    blues: "ब्लूज़", kpop: "के-पॉप", anime: "एनीमे", news: "समाचार", talk: "टॉक"
+                }
+            },
+            tr: {
+                subtitle: "Müzik kütüphaneniz + Dünya radyoları",
+                library: "Kütüphane",
+                radiosOnline: "Çevrimiçi Radyolar",
+                addMusic: "Müzik Ekle",
+                dragHere: "Müziği buraya sürükle",
+                clickToSelect: "veya seçmek için tıkla",
+                processing: "İşleniyor...",
+                myMusic: "Müziğim",
+                play: "Çal",
+                shuffle: "Karıştır",
+                clear: "Temizle",
+                noMusic: "Müzik eklenmedi",
+                searchRadio: "Radyo ara...",
+                allCountries: "🌍 Tüm ülkeler",
+                all: "Tümü",
+                availableRadios: "Mevcut Radyolar",
+                loadingRadios: "Radyolar yükleniyor...",
+                noRadioFound: "Radyo bulunamadı",
+                favoriteRadios: "Favori Radyolar",
+                noFavorites: "Henüz favori yok",
+                noSong: "Müzik yok",
+                selectSong: "Şarkı veya radyo seç",
+                live: "CANLI",
+                options: "Seçenekler",
+                repeatSong: "Şarkıyı Tekrarla",
+                repeatPlaylist: "Listeyi Tekrarla",
+                shuffleMode: "Karıştırma Modu",
+                aboutRadio: "Radyo Hakkında",
+                country: "Ülke:",
+                genre: "Tür:",
+                bitrate: "Bitrate:",
+                visitSite: "Siteyi ziyaret et",
+                footer: "Yerel müzik + Tüm dünyadan radyolar",
+                ready: "🎵 RadioMC hazır!",
+                musicAdded: "şarkı eklendi!",
+                removed: "Favorilerden kaldırıldı",
+                added: "⭐ Favorilere eklendi!",
+                addFirst: "Önce müzik ekleyin!",
+                shuffleOn: "🔀 Karıştırma açık",
+                shuffleOff: "🔀 Karıştırma kapalı",
+                repeatOff: "🔁 Tekrar kapalı",
+                repeatOne: "🔂 Şarkıyı tekrarla",
+                repeatAll: "🔁 Listeyi tekrarla",
+                musicRemoved: "Müzik kaldırıldı",
+                libraryEmpty: "Kütüphane zaten boş",
+                confirmClear: "Tüm müzikleri sil?",
+                libraryCleared: "Kütüphane temizlendi!",
+                radioOffline: "📡 Radyo çevrimdışı",
+                radioOnline: "🟢 Çevrimiçi",
+                radioError: "❌ Bağlantı hatası",
+                connecting: "Bağlanıyor...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elektronik",
+                    dance: "Dans", house: "House", jazz: "Caz", classical: "Klasik",
+                    country: "Country", reggae: "Reggae", latin: "Latin", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "Haberler", talk: "Sohbet"
+                }
+            },
+            pl: {
+                subtitle: "Twoja biblioteka muzyczna + Radia świata",
+                library: "Biblioteka",
+                radiosOnline: "Radia Online",
+                addMusic: "Dodaj Muzykę",
+                dragHere: "Przeciągnij muzykę tutaj",
+                clickToSelect: "lub kliknij aby wybrać",
+                processing: "Przetwarzanie...",
+                myMusic: "Moja Muzyka",
+                play: "Odtwórz",
+                shuffle: "Losowo",
+                clear: "Wyczyść",
+                noMusic: "Nie dodano muzyki",
+                searchRadio: "Szukaj radia...",
+                allCountries: "🌍 Wszystkie kraje",
+                all: "Wszystkie",
+                availableRadios: "Dostępne Radia",
+                loadingRadios: "Ładowanie radia...",
+                noRadioFound: "Nie znaleziono radia",
+                favoriteRadios: "Ulubione Radia",
+                noFavorites: "Brak ulubionych",
+                noSong: "Brak muzyki",
+                selectSong: "Wybierz utwór lub radio",
+                live: "NA ŻYWO",
+                options: "Opcje",
+                repeatSong: "Powtórz Utwór",
+                repeatPlaylist: "Powtórz Playlistę",
+                shuffleMode: "Tryb Losowy",
+                aboutRadio: "O Radiu",
+                country: "Kraj:",
+                genre: "Gatunek:",
+                bitrate: "Bitrate:",
+                visitSite: "Odwiedź stronę",
+                footer: "Lokalna muzyka + Radia z całego świata",
+                ready: "🎵 RadioMC gotowy!",
+                musicAdded: "utworów dodanych!",
+                removed: "Usunięto z ulubionych",
+                added: "⭐ Dodano do ulubionych!",
+                addFirst: "Najpierw dodaj muzykę!",
+                shuffleOn: "🔀 Losowo włączone",
+                shuffleOff: "🔀 Losowo wyłączone",
+                repeatOff: "🔁 Powtarzanie wyłączone",
+                repeatOne: "🔂 Powtórz utwór",
+                repeatAll: "🔁 Powtórz playlistę",
+                musicRemoved: "Muzyka usunięta",
+                libraryEmpty: "Biblioteka już pusta",
+                confirmClear: "Usunąć całą muzykę?",
+                libraryCleared: "Biblioteka wyczyszczona!",
+                radioOffline: "📡 Radio offline",
+                radioOnline: "🟢 Online",
+                radioError: "❌ Błąd połączenia",
+                connecting: "Łączenie...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elektronika",
+                    dance: "Dance", house: "House", jazz: "Jazz", classical: "Klasyczna",
+                    country: "Country", reggae: "Reggae", latin: "Latino", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "Wiadomości", talk: "Talk"
+                }
+            },
+            nl: {
+                subtitle: "Je muziekbibliotheek + Wereldradio",
+                library: "Bibliotheek",
+                radiosOnline: "Online Radio",
+                addMusic: "Muziek Toevoegen",
+                dragHere: "Sleep muziek hierheen",
+                clickToSelect: "of klik om te selecteren",
+                processing: "Verwerken...",
+                myMusic: "Mijn Muziek",
+                play: "Afspelen",
+                shuffle: "Willekeurig",
+                clear: "Wissen",
+                noMusic: "Geen muziek toegevoegd",
+                searchRadio: "Radio zoeken...",
+                allCountries: "🌍 Alle landen",
+                all: "Alles",
+                availableRadios: "Beschikbare Radio's",
+                loadingRadios: "Radio's laden...",
+                noRadioFound: "Geen radio gevonden",
+                favoriteRadios: "Favoriete Radio's",
+                noFavorites: "Nog geen favorieten",
+                noSong: "Geen muziek",
+                selectSong: "Selecteer nummer of radio",
+                live: "LIVE",
+                options: "Opties",
+                repeatSong: "Nummer Herhalen",
+                repeatPlaylist: "Playlist Herhalen",
+                shuffleMode: "Willekeurige Modus",
+                aboutRadio: "Over Radio",
+                country: "Land:",
+                genre: "Genre:",
+                bitrate: "Bitrate:",
+                visitSite: "Bezoek website",
+                footer: "Lokale muziek + Radio's van over de hele wereld",
+                ready: "🎵 RadioMC klaar!",
+                musicAdded: "nummer(s) toegevoegd!",
+                removed: "Verwijderd uit favorieten",
+                added: "⭐ Toegevoegd aan favorieten!",
+                addFirst: "Voeg eerst muziek toe!",
+                shuffleOn: "🔀 Willekeurig aan",
+                shuffleOff: "🔀 Willekeurig uit",
+                repeatOff: "🔁 Herhalen uit",
+                repeatOne: "🔂 Nummer herhalen",
+                repeatAll: "🔁 Playlist herhalen",
+                musicRemoved: "Muziek verwijderd",
+                libraryEmpty: "Bibliotheek al leeg",
+                confirmClear: "Alle muziek verwijderen?",
+                libraryCleared: "Bibliotheek gewist!",
+                radioOffline: "📡 Radio offline",
+                radioOnline: "🟢 Online",
+                radioError: "❌ Verbindingsfout",
+                connecting: "Verbinden...",
+                genres: {
+                    pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elektronisch",
+                    dance: "Dance", house: "House", jazz: "Jazz", classical: "Klassiek",
+                    country: "Country", reggae: "Reggae", latin: "Latin", sertanejo: "Sertanejo",
+                    funk: "Funk", gospel: "Gospel", metal: "Metal", "r&b": "R&B",
+                    blues: "Blues", kpop: "K-Pop", anime: "Anime", news: "Nieuws", talk: "Talk"
+                }
+            },
+            th: {
+                subtitle: "คลังเพลงของคุณ + วิทยุโลก",
+                library: "คลัง",
+                radiosOnline: "วิทยุออนไลน์",
+                addMusic: "เพิ่มเพลง",
+                dragHere: "ลากเพลงมาที่นี่",
+                clickToSelect: "หรือคลิกเพื่อเลือก",
+                processing: "กำลังประมวลผล...",
+                myMusic: "เพลงของฉัน",
+                play: "เล่น",
+                shuffle: "สุ่ม",
+                clear: "ล้าง",
+                noMusic: "ยังไม่มีเพลง",
+                searchRadio: "ค้นหาวิทยุ...",
+                allCountries: "🌍 ทุกประเทศ",
+                all: "ทั้งหมด",
+                availableRadios: "วิทยุที่มี",
+                loadingRadios: "กำลังโหลดวิทยุ...",
+                noRadioFound: "ไม่พบวิทยุ",
+                favoriteRadios: "วิทยุโปรด",
+                noFavorites: "ยังไม่มีรายการโปรด",
+                noSong: "ไม่มีเพลง",
+                selectSong: "เลือกเพลงหรือวิทยุ",
+                live: "สด",
+                options: "ตัวเลือก",
+                repeatSong: "เล่นซ้ำเพลง",
+                repeatPlaylist: "เล่นซ้ำเพลย์ลิสต์",
+                shuffleMode: "โหมดสุ่ม",
+                aboutRadio: "เกี่ยวกับวิทยุ",
+                country: "ประเทศ:",
+                genre: "แนวเพลง:",
+                bitrate: "บิตเรต:",
+                visitSite: "เยี่ยมชมเว็บไซต์",
+                footer: "เพลงท้องถิ่น + วิทยุจากทั่วโลก",
+                ready: "🎵 RadioMC พร้อม!",
+                musicAdded: "เพิ่มเพลงแล้ว!",
+                removed: "ลบออกจากรายการโปรด",
+                added: "⭐ เพิ่มในรายการโปรดแล้ว!",
+                addFirst: "เพิ่มเพลงก่อน!",
+                shuffleOn: "🔀 เปิดโหมดสุ่ม",
+                shuffleOff: "🔀 ปิดโหมดสุ่ม",
+                repeatOff: "🔁 ปิดการเล่นซ้ำ",
+                repeatOne: "🔂 เล่นซ้ำเพลง",
+                repeatAll: "🔁 เล่นซ้ำเพลย์ลิสต์",
+                musicRemoved: "ลบเพลงแล้ว",
+                libraryEmpty: "คลังว่างเปล่าแล้ว",
+                confirmClear: "ลบเพลงทั้งหมด?",
+                libraryCleared: "ล้างคลังแล้ว!",
+                radioOffline: "📡 วิทยุออฟไลน์",
+                radioOnline: "🟢 ออนไลน์",
+                radioError: "❌ ข้อผิดพลาดการเชื่อมต่อ",
+                connecting: "กำลังเชื่อมต่อ...",
+                genres: {
+                    pop: "ป๊อป", rock: "ร็อค", "hip hop": "ฮิปฮอป", electronic: "อิเล็กทรอนิก",
+                    dance: "แดนซ์", house: "เฮาส์", jazz: "แจ๊ส", classical: "คลาสสิก",
+                    country: "คันทรี", reggae: "เร็กเก้", latin: "ลาติน", sertanejo: "เซอร์ตาเนโจ",
+                    funk: "ฟังก์", gospel: "กอสเปล", metal: "เมทัล", "r&b": "อาร์แอนด์บี",
+                    blues: "บลูส์", kpop: "เคป๊อป", anime: "อนิเมะ", news: "ข่าว", talk: "ทอล์ค"
+                }
+            }
+        };
+
+        let currentLang = 'pt';
+        const genres = ['', 'pop', 'rock', 'hip hop', 'electronic', 'dance', 'house', 'jazz', 'classical', 'country', 'reggae', 'latin', 'sertanejo', 'funk', 'gospel', 'metal', 'r&b', 'blues', 'kpop', 'anime', 'news', 'talk'];
         
+        // =============================================
+        // TRADUÇÃO
+        // =============================================
+        function t(key) {
+            return translations[currentLang]?.[key] || translations['pt'][key] || key;
+        }
+
+        function tGenre(genre) {
+            return translations[currentLang]?.genres?.[genre] || translations['pt']?.genres?.[genre] || genre;
+        }
+
+        function applyTranslations() {
+            document.getElementById('headerSubtitle').textContent = t('subtitle');
+            
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[currentLang]?.[key]) {
+                    el.textContent = translations[currentLang][key];
+                }
+            });
+
+            document.querySelectorAll('[data-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-placeholder');
+                if (translations[currentLang]?.[key]) {
+                    el.placeholder = translations[currentLang][key];
+                }
+            });
+
+            renderGenreButtons();
+            
+            if (!currentRadio && currentIndex === -1) {
+                document.getElementById('currentTitle').textContent = t('noSong');
+                document.getElementById('currentArtist').textContent = t('selectSong');
+            }
+        }
+
+        function renderGenreButtons() {
+            const container = document.getElementById('genreButtons');
+            container.innerHTML = genres.map(g => `
+                <button onclick="filterGenre('${g}')" class="genre-btn ${currentGenre === g ? 'active' : ''} px-3 py-1 rounded-full text-xs glass" data-genre="${g}">
+                    ${g === '' ? t('all') : tGenre(g)}
+                </button>
+            `).join('');
+        }
+
         // =============================================
         // ESTADO GLOBAL
         // =============================================
+        const RADIO_API = 'https://de1.api.radio-browser.info/json';
+        const DB_NAME = 'RadioMC_DB_v5';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'musicFiles';
+        
         let db = null;
         let musicLibrary = [];
         let radioStations = [];
@@ -477,6 +1605,7 @@
         let currentTab = 'library';
         let currentGenre = '';
         let searchTimeout = null;
+        let offlineRadios = new Set();
 
         const audio = document.getElementById('audioPlayer');
 
@@ -484,6 +1613,7 @@
         // INICIALIZAÇÃO
         // =============================================
         document.addEventListener('DOMContentLoaded', async () => {
+            loadLanguage();
             try {
                 await initDB();
                 await loadLibrary();
@@ -493,12 +1623,18 @@
                 loadSettings();
                 updateVolume();
                 loadRadios();
-                showToast('🎵 RadioMC pronto!', 'success');
+                showToast(t('ready'), 'success');
             } catch (error) {
-                console.error('Erro ao iniciar:', error);
-                showToast('Erro ao iniciar', 'error');
+                console.error('Erro:', error);
             }
         });
+
+        function loadLanguage() {
+            const saved = localStorage.getItem('radiomc_lang') || 'pt';
+            currentLang = saved;
+            document.getElementById('langSelector').value = saved;
+            applyTranslations();
+        }
 
         // =============================================
         // INDEXEDDB
@@ -593,8 +1729,32 @@
             };
             
             audio.onended = handleTrackEnd;
-            audio.onplay = () => { isPlaying = true; updatePlayBtn(); startVisualizer(); document.getElementById('albumArt').classList.add('spinning'); };
-            audio.onpause = () => { isPlaying = false; updatePlayBtn(); stopVisualizer(); document.getElementById('albumArt').classList.remove('spinning'); };
+            audio.onplay = () => { 
+                isPlaying = true; 
+                updatePlayBtn(); 
+                startVisualizer(); 
+                document.getElementById('albumArt').classList.add('spinning');
+                if (currentRadio) showRadioStatus('online');
+            };
+            audio.onpause = () => { 
+                isPlaying = false; 
+                updatePlayBtn(); 
+                stopVisualizer(); 
+                document.getElementById('albumArt').classList.remove('spinning'); 
+            };
+            audio.onerror = () => {
+                if (currentRadio) {
+                    showRadioStatus('offline');
+                    offlineRadios.add(currentRadio.stationuuid);
+                    renderRadios();
+                }
+            };
+            audio.onwaiting = () => {
+                if (currentRadio) showRadioStatus('connecting');
+            };
+            audio.onplaying = () => {
+                if (currentRadio) showRadioStatus('online');
+            };
 
             document.getElementById('progressBar').oninput = (e) => {
                 if (currentRadio) return;
@@ -622,7 +1782,6 @@
                 updateShuffleBtn(); saveSettings();
             };
 
-            // Busca de rádios
             document.getElementById('radioSearch').oninput = (e) => {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => searchRadios(e.target.value), 500);
@@ -632,13 +1791,47 @@
                 loadRadios(e.target.value, currentGenre);
             };
 
-            // Teclado
+            document.getElementById('langSelector').onchange = (e) => {
+                currentLang = e.target.value;
+                localStorage.setItem('radiomc_lang', currentLang);
+                applyTranslations();
+                renderLibrary();
+                renderRadios();
+                renderFavorites();
+            };
+
             document.onkeydown = (e) => {
                 if (e.target.tagName === 'INPUT') return;
                 if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
                 else if (e.code === 'ArrowRight') nextTrack();
                 else if (e.code === 'ArrowLeft') prevTrack();
             };
+        }
+
+        // =============================================
+        // STATUS DO RÁDIO
+        // =============================================
+        function showRadioStatus(status) {
+            const container = document.getElementById('radioStatusContainer');
+            const statusEl = document.getElementById('radioStatus');
+            container.classList.remove('hidden');
+            
+            statusEl.className = 'text-xs px-2 py-1 rounded-full';
+            
+            if (status === 'online') {
+                statusEl.textContent = t('radioOnline');
+                statusEl.classList.add('bg-green-500/30', 'text-green-400');
+            } else if (status === 'offline') {
+                statusEl.textContent = t('radioOffline');
+                statusEl.classList.add('bg-red-500/30', 'text-red-400');
+            } else if (status === 'connecting') {
+                statusEl.textContent = t('connecting');
+                statusEl.classList.add('bg-yellow-500/30', 'text-yellow-400');
+            }
+        }
+
+        function hideRadioStatus() {
+            document.getElementById('radioStatusContainer').classList.add('hidden');
         }
 
         // =============================================
@@ -658,7 +1851,7 @@
         // =============================================
         async function handleFiles(files) {
             const validFiles = Array.from(files).filter(f => f.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac)$/i.test(f.name));
-            if (validFiles.length === 0) { showToast('Nenhum arquivo de áudio válido', 'error'); return; }
+            if (validFiles.length === 0) return;
 
             const progress = document.getElementById('uploadProgress');
             const text = document.getElementById('uploadText');
@@ -666,7 +1859,7 @@
 
             let count = 0;
             for (const file of validFiles) {
-                text.textContent = `Processando: ${file.name.substring(0, 20)}...`;
+                text.textContent = `${t('processing')} ${file.name.substring(0, 20)}...`;
                 try {
                     const buffer = await file.arrayBuffer();
                     const name = file.name.replace(/\.[^/.]+$/, '');
@@ -678,18 +1871,18 @@
 
             progress.classList.add('hidden');
             renderLibrary();
-            if (count > 0) showToast(`✅ ${count} música(s) adicionada(s)!`, 'success');
+            if (count > 0) showToast(`✅ ${count} ${t('musicAdded')}`, 'success');
         }
 
         // =============================================
-        // RENDERIZAÇÃO BIBLIOTECA
+        // RENDERIZAÇÃO
         // =============================================
         function renderLibrary() {
             const container = document.getElementById('musicLibrary');
             document.getElementById('musicCount').textContent = musicLibrary.length;
 
             if (musicLibrary.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-center py-8"><i class="fas fa-folder-open text-3xl mb-2 block opacity-50"></i>Nenhuma música adicionada</p>';
+                container.innerHTML = `<p class="text-gray-400 text-center py-8"><i class="fas fa-folder-open text-3xl mb-2 block opacity-50"></i>${t('noMusic')}</p>`;
                 return;
             }
 
@@ -710,23 +1903,31 @@
         }
 
         // =============================================
-        // RÁDIOS ONLINE
+        // RÁDIOS ONLINE (1000 sem repetir)
         // =============================================
         async function loadRadios(country = '', genre = '') {
             const loading = document.getElementById('radioLoading');
             loading.classList.remove('hidden');
 
             try {
-                let url = `${RADIO_API}/stations/search?limit=50&order=clickcount&reverse=true&hidebroken=true`;
+                let url = `${RADIO_API}/stations/search?limit=1000&order=clickcount&reverse=true&hidebroken=true`;
                 if (country) url += `&countrycode=${country}`;
                 if (genre) url += `&tag=${encodeURIComponent(genre)}`;
 
                 const response = await fetch(url);
-                radioStations = await response.json();
+                const data = await response.json();
+                
+                // Remove duplicatas por UUID
+                const seen = new Set();
+                radioStations = data.filter(r => {
+                    if (seen.has(r.stationuuid)) return false;
+                    seen.add(r.stationuuid);
+                    return true;
+                });
+                
                 renderRadios();
             } catch (error) {
                 console.error('Erro ao carregar rádios:', error);
-                showToast('Erro ao carregar rádios', 'error');
             }
 
             loading.classList.add('hidden');
@@ -739,9 +1940,17 @@
             loading.classList.remove('hidden');
 
             try {
-                const url = `${RADIO_API}/stations/search?name=${encodeURIComponent(query)}&limit=50&order=clickcount&reverse=true&hidebroken=true`;
+                const url = `${RADIO_API}/stations/search?name=${encodeURIComponent(query)}&limit=1000&order=clickcount&reverse=true&hidebroken=true`;
                 const response = await fetch(url);
-                radioStations = await response.json();
+                const data = await response.json();
+                
+                const seen = new Set();
+                radioStations = data.filter(r => {
+                    if (seen.has(r.stationuuid)) return false;
+                    seen.add(r.stationuuid);
+                    return true;
+                });
+                
                 renderRadios();
             } catch (error) {
                 console.error('Erro na busca:', error);
@@ -760,21 +1969,36 @@
 
         function renderRadios() {
             const container = document.getElementById('radioList');
+            const onlineStations = radioStations.filter(r => !offlineRadios.has(r.stationuuid));
+            
             document.getElementById('radioCount').textContent = radioStations.length;
+            
+            const onlineCountEl = document.getElementById('onlineCount');
+            if (offlineRadios.size > 0) {
+                onlineCountEl.textContent = `${onlineStations.length} online`;
+                onlineCountEl.classList.remove('hidden');
+            } else {
+                onlineCountEl.classList.add('hidden');
+            }
 
             if (radioStations.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-center py-8 col-span-2"><i class="fas fa-broadcast-tower text-3xl mb-2 block opacity-50"></i>Nenhuma rádio encontrada</p>';
+                container.innerHTML = `<p class="text-gray-400 text-center py-8 col-span-2"><i class="fas fa-broadcast-tower text-3xl mb-2 block opacity-50"></i>${t('noRadioFound')}</p>`;
                 return;
             }
 
-            container.innerHTML = radioStations.map((r, i) => `
-                <div class="radio-card glass rounded-xl p-3 cursor-pointer ${currentRadio?.stationuuid === r.stationuuid ? 'playing' : ''}" onclick="playRadio(${i})">
+            container.innerHTML = radioStations.map((r, i) => {
+                const isOffline = offlineRadios.has(r.stationuuid);
+                return `
+                <div class="radio-card glass rounded-xl p-3 cursor-pointer ${currentRadio?.stationuuid === r.stationuuid ? 'playing' : ''} ${isOffline ? 'offline' : ''}" onclick="playRadio(${i})">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
                             ${r.favicon ? `<img src="${r.favicon}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"><i class="fas fa-broadcast-tower hidden"></i>` : '<i class="fas fa-broadcast-tower"></i>'}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-medium text-sm truncate">${escapeHtml(r.name)}</p>
+                            <div class="flex items-center gap-2">
+                                <span class="status-dot ${isOffline ? 'offline' : 'online'}"></span>
+                                <p class="font-medium text-sm truncate">${escapeHtml(r.name)}</p>
+                            </div>
                             <p class="text-xs text-gray-400 truncate">${r.country || 'Desconhecido'} ${r.tags ? '• ' + r.tags.split(',')[0] : ''}</p>
                         </div>
                         <button onclick="event.stopPropagation(); toggleFavorite('${r.stationuuid}')" class="p-2 hover:scale-110 transition">
@@ -782,14 +2006,18 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function playRadio(index) {
             const radio = radioStations[index];
             if (!radio || !radio.url_resolved) {
-                showToast('Rádio indisponível', 'error');
+                showToast(t('radioError'), 'error');
                 return;
+            }
+
+            if (offlineRadios.has(radio.stationuuid)) {
+                offlineRadios.delete(radio.stationuuid);
             }
 
             currentRadio = radio;
@@ -797,6 +2025,8 @@
 
             if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
 
+            showRadioStatus('connecting');
+            
             audio.src = radio.url_resolved;
             audio.play().then(() => {
                 updateNowPlaying(radio.name, radio.country || 'Rádio Online');
@@ -806,7 +2036,10 @@
                 renderFavorites();
             }).catch(err => {
                 console.error('Erro ao tocar rádio:', err);
-                showToast('Erro ao conectar na rádio', 'error');
+                showRadioStatus('offline');
+                offlineRadios.add(radio.stationuuid);
+                renderRadios();
+                showToast(t('radioError'), 'error');
             });
 
             document.getElementById('progressContainer').classList.add('hidden');
@@ -847,10 +2080,10 @@
             const index = favoriteRadios.findIndex(r => r.stationuuid === uuid);
             if (index >= 0) {
                 favoriteRadios.splice(index, 1);
-                showToast('Removido dos favoritos', 'info');
+                showToast(t('removed'), 'info');
             } else {
                 favoriteRadios.push(radio);
-                showToast('⭐ Adicionado aos favoritos!', 'success');
+                showToast(t('added'), 'success');
             }
 
             saveFavorites();
@@ -863,7 +2096,7 @@
             document.getElementById('favCount').textContent = favoriteRadios.length;
 
             if (favoriteRadios.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-center py-4 col-span-2 text-sm">Nenhuma rádio favorita ainda</p>';
+                container.innerHTML = `<p class="text-gray-500 text-center py-4 col-span-2 text-sm">${t('noFavorites')}</p>`;
                 return;
             }
 
@@ -907,30 +2140,31 @@
             if (index < 0 || index >= musicLibrary.length) return;
             
             const music = musicLibrary[index];
-            if (!music || !music.buffer) { showToast('Música corrompida', 'error'); return; }
+            if (!music || !music.buffer) return;
             
             currentIndex = index;
             currentRadio = null;
+            hideRadioStatus();
 
             const url = createBlobUrl(music);
-            if (!url) { showToast('Erro ao carregar', 'error'); return; }
+            if (!url) return;
             
             audio.src = url;
             audio.play().then(() => {
-                updateNowPlaying(music.name, 'Reproduzindo');
+                updateNowPlaying(music.name, t('play'));
                 showLiveIndicator(false);
                 document.getElementById('progressContainer').classList.remove('hidden');
                 document.getElementById('radioInfo').classList.add('hidden');
                 renderLibrary();
             }).catch(err => {
-                updateNowPlaying(music.name, 'Clique ▶ para tocar');
+                updateNowPlaying(music.name, t('selectSong'));
                 renderLibrary();
             });
         }
 
         function playAllLocal() {
             if (musicLibrary.length > 0) { isShuffled = false; updateShuffleBtn(); playLocalTrack(0); }
-            else showToast('Adicione músicas primeiro!', 'info');
+            else showToast(t('addFirst'), 'info');
         }
 
         function shufflePlayLocal() {
@@ -939,7 +2173,7 @@
                 document.getElementById('shuffleMode').checked = true;
                 updateShuffleBtn();
                 playLocalTrack(Math.floor(Math.random() * musicLibrary.length));
-            } else showToast('Adicione músicas primeiro!', 'info');
+            } else showToast(t('addFirst'), 'info');
         }
 
         // =============================================
@@ -948,11 +2182,11 @@
         function togglePlay() {
             if (currentRadio) {
                 if (isPlaying) audio.pause();
-                else audio.play().catch(() => showToast('Erro ao reproduzir', 'error'));
+                else audio.play().catch(() => {});
                 return;
             }
 
-            if (musicLibrary.length === 0) { showToast('Adicione músicas primeiro!', 'info'); return; }
+            if (musicLibrary.length === 0) { showToast(t('addFirst'), 'info'); return; }
             if (currentIndex === -1) { playLocalTrack(0); return; }
 
             if (isPlaying) audio.pause();
@@ -987,7 +2221,7 @@
             document.getElementById('shuffleMode').checked = isShuffled;
             updateShuffleBtn();
             saveSettings();
-            showToast(isShuffled ? '🔀 Aleatório ativado' : '🔀 Aleatório desativado', 'info');
+            showToast(isShuffled ? t('shuffleOn') : t('shuffleOff'), 'info');
         }
 
         function toggleRepeat() {
@@ -997,7 +2231,7 @@
             document.getElementById('repeatPlaylist').checked = repeatMode === 'all';
             updateRepeatBtn();
             saveSettings();
-            const msgs = { none: '🔁 Repetição desativada', one: '🔂 Repetir música', all: '🔁 Repetir playlist' };
+            const msgs = { none: t('repeatOff'), one: t('repeatOne'), all: t('repeatAll') };
             showToast(msgs[repeatMode], 'info');
         }
 
@@ -1054,25 +2288,25 @@
                     if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
                     currentIndex = -1; isPlaying = false;
                     updatePlayBtn(); stopVisualizer();
-                    updateNowPlaying('Nenhuma música', 'Selecione uma música');
+                    updateNowPlaying(t('noSong'), t('selectSong'));
                 } else if (currentIndex > index) currentIndex--;
                 renderLibrary();
-                showToast('Música removida', 'info');
+                showToast(t('musicRemoved'), 'info');
             } catch (err) { console.error('Erro:', err); }
         }
 
         async function clearLibrary() {
-            if (musicLibrary.length === 0) { showToast('Biblioteca já vazia', 'info'); return; }
-            if (!confirm('Remover todas as músicas?')) return;
+            if (musicLibrary.length === 0) { showToast(t('libraryEmpty'), 'info'); return; }
+            if (!confirm(t('confirmClear'))) return;
             try {
                 await clearAllMusic();
                 audio.pause(); audio.src = '';
                 if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
                 musicLibrary = []; currentIndex = -1; isPlaying = false;
                 updatePlayBtn(); stopVisualizer();
-                updateNowPlaying('Nenhuma música', 'Selecione uma música');
+                updateNowPlaying(t('noSong'), t('selectSong'));
                 renderLibrary();
-                showToast('Biblioteca limpa!', 'success');
+                showToast(t('libraryCleared'), 'success');
             } catch (err) { console.error('Erro:', err); }
         }
 
