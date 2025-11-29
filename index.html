@@ -38,6 +38,7 @@
     <!-- Canonical -->
     <link rel="canonical" href="https://gatosmias1.github.io/radiomc/">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -111,7 +112,7 @@
         
         .radio-card.offline {
             opacity: 0.5;
-            pointer-events: none;
+            pointer-events: auto; /* permite clicar novamente mesmo marcada como offline */
         }
         
         .radio-card.offline::after {
@@ -315,12 +316,15 @@
         </header>
 
         <!-- Tabs -->
-        <div class="flex justify-center gap-2 mb-4">
+        <div class="flex justify-center gap-2 mb-4 flex-wrap">
             <button onclick="switchTab('library')" id="tabLibrary" class="tab-btn active px-6 py-2 rounded-full font-medium glass">
                 <i class="fas fa-music mr-2"></i><span data-translate="library">Biblioteca</span>
             </button>
             <button onclick="switchTab('radios')" id="tabRadios" class="tab-btn px-6 py-2 rounded-full font-medium glass">
                 <i class="fas fa-broadcast-tower mr-2"></i><span data-translate="radiosOnline">Rádios Online</span>
+            </button>
+            <button onclick="switchTab('creator')" id="tabCreator" class="tab-btn px-6 py-2 rounded-full font-medium glass">
+                <i class="fas fa-user mr-2"></i><span data-translate="creatorTabTitle">Criador</span>
             </button>
         </div>
 
@@ -510,10 +514,100 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ABA CRIADOR -->
+                <div id="creatorTab" class="hidden">
+                    <div class="glass rounded-2xl p-4 neon-glow mb-4 space-y-5">
+                        <header>
+                            <h2 class="text-lg font-semibold mb-2 flex items-center">
+                                <i class="fas fa-user mr-2 text-cyan-400"></i>
+                                <span data-translate="creatorTabTitle">Criador</span>
+                            </h2>
+                            <p class="text-sm text-gray-300" data-translate="creatorIntro">
+                                Este projeto foi criado por <span class="text-cyan-400 font-semibold">@GatosMias</span>.
+                                Aqui você encontra minhas redes, formas de apoio e um pouco mais sobre o RadioMC.
+                            </p>
+                        </header>
+
+                        <!-- Apoio / LivePix -->
+                        <section class="glass rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold mb-1" data-translate="supportProjectTitle">Apoie o projeto</p>
+                                <p class="text-xs text-gray-400 max-w-md" data-translate="supportProjectText">
+                                    Se o RadioMC te ajuda no dia a dia (estudo, live, trabalho), considere apoiar para que eu possa continuar melhorando o site e criando novas funções.
+                                </p>
+                            </div>
+                            <a href="https://livepix.gg/gatosmiasoficial" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 font-semibold text-sm transition whitespace-nowrap">
+                                <i class="fas fa-heart"></i>
+                                <span data-translate="livepixButton">LivePix - Apoiar o Criador</span>
+                            </a>
+                        </section>
+
+                        <!-- Redes sociais principais -->
+                        <section>
+                            <h3 class="text-sm font-semibold mb-2 flex items-center">
+                                <i class="fas fa-share-alt mr-2 text-purple-400"></i>
+                                <span data-translate="myNetworksTitle">Minhas redes</span>
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <a href="https://youtube.com/@gatosmiasofic" target="_blank" class="glass rounded-xl p-3 flex items-center gap-3 hover:bg-white/10 transition">
+                                    <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-red-600/80">
+                                        <i class="fab fa-youtube"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold">YouTube</p>
+                                        <p class="text-xs text-gray-400">@gatosmiasofic</p>
+                                    </div>
+                                </a>
+                                <a href="https://tiktok.com/@gatosmiasoficial" target="_blank" class="glass rounded-xl p-3 flex items-center gap-3 hover:bg-white/10 transition">
+                                    <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-white text-black">
+                                        <i class="fab fa-tiktok"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold">TikTok</p>
+                                        <p class="text-xs text-gray-400">@gatosmiasoficial</p>
+                                    </div>
+                                </a>
+                                <a href="https://twitch.tv/gatosmiasofic" target="_blank" class="glass rounded-xl p-3 flex items-center gap-3 hover:bg-white/10 transition">
+                                    <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-purple-600/90">
+                                        <i class="fab fa-twitch"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold">Twitch</p>
+                                        <p class="text-xs text-gray-400">@gatosmiasofic</p>
+                                    </div>
+                                </a>
+                                <a href="https://github.com/gatosmias1" target="_blank" class="glass rounded-xl p-3 flex items-center gap-3 hover:bg-white/10 transition">
+                                    <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-900">
+                                        <i class="fab fa-github"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold">GitHub</p>
+                                        <p class="text-xs text-gray-400">@gatosmias1</p>
+                                    </div>
+                                </a>
+                            </div>
+                        </section>
+
+                        <!-- Sobre o RadioMC -->
+                        <section class="glass rounded-xl p-3">
+                            <h3 class="text-sm font-semibold mb-1 flex items-center">
+                                <i class="fas fa-info-circle mr-2 text-cyan-400"></i>
+                                <span data-translate="aboutRadioMCTitle">Sobre o RadioMC</span>
+                            </h3>
+                            <p class="text-xs text-gray-300 leading-relaxed" data-translate="aboutRadioMCText">
+                                O RadioMC foi criado para ser um player simples, rápido e completo: você pode usar 
+                                suas próprias músicas locais + milhares de rádios do mundo todo, em vários idiomas. 
+                                Tudo isso direto do navegador, sem precisar instalar nada.
+                            </p>
+                        </section>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Player (Direita) -->
-            <div class="space-y-4">
+            <div id="playerColumn" class="space-y-4">
                 <div class="glass rounded-2xl p-4 neon-glow">
                     <div class="text-center mb-4">
                         <div id="albumArt" class="w-32 h-32 mx-auto bg-gradient-to-br from-cyan-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-3 shadow-2xl">
@@ -523,11 +617,12 @@
                             <div id="liveIndicator" class="live-indicator hidden"></div>
                             <span id="liveText" class="text-xs text-red-400 hidden" data-translate="live">AO VIVO</span>
                         </div>
-                        <h3 id="currentTitle" class="text-base font-semibold truncate px-2" data-translate="noSong">Nenhuma música</h3>
-                        <p id="currentArtist" class="text-gray-400 text-xs truncate" data-translate="selectSong">Selecione uma música ou rádio</p>
+                        <h3 id="currentTitle" class="text-base font-semibold truncate px-2">Nenhuma música</h3>
+                        <p id="currentArtist" class="text-gray-400 text-xs truncate">Selecione uma música ou rádio</p>
                         <div id="radioStatusContainer" class="hidden mt-2">
                             <span id="radioStatus" class="text-xs px-2 py-1 rounded-full"></span>
                         </div>
+
                     </div>
 
                     <div id="progressContainer" class="mb-4">
@@ -608,7 +703,7 @@
         </div>
 
         <footer class="text-center mt-4 text-gray-500 text-xs space-y-2">
-            <p>🎵 RadioMC - <span data-translate="footer">Músicas locais + Rádios do mundo todo</span></p>
+            <p>🎵 RadioMC v1.2 - <span data-translate="footer">Músicas locais + Rádios do mundo todo</span></p>
             <div class="flex justify-center gap-4 text-lg">
                 <a href="https://youtube.com/@gatosmiasofic" target="_blank" class="hover:text-red-500 transition" title="YouTube">
                     <i class="fab fa-youtube"></i>
@@ -689,6 +784,14 @@
                 connecting: "Conectando...",
                 loadMore: "Carregar Mais 100 Rádios",
                 totalRadios: "Total",
+                creatorTabTitle: "Criador",
+                creatorIntro: "Este projeto foi criado por @GatosMias. Aqui você encontra minhas redes, formas de apoio e um pouco mais sobre o RadioMC.",
+                supportProjectTitle: "Apoie o projeto",
+                supportProjectText: "Se o RadioMC te ajuda no dia a dia (estudo, live, trabalho), considere apoiar para que eu possa continuar melhorando o site e criando novas funções.",
+                livepixButton: "LivePix - Apoiar o Criador",
+                myNetworksTitle: "Minhas redes",
+                aboutRadioMCTitle: "Sobre o RadioMC",
+                aboutRadioMCText: "O RadioMC foi criado para ser um player simples, rápido e completo: você pode usar suas próprias músicas locais + milhares de rádios do mundo todo, em vários idiomas. Tudo isso direto do navegador, sem precisar instalar nada.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Eletrônica",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Clássica",
@@ -752,6 +855,14 @@
                 connecting: "Connecting...",
                 loadMore: "Load More 100 Radios",
                 totalRadios: "Total",
+                creatorTabTitle: "Creator",
+                creatorIntro: "This project was created by @GatosMias. Here you can find my networks, ways to support and a bit more about RadioMC.",
+                supportProjectTitle: "Support the project",
+                supportProjectText: "If RadioMC helps you in your daily life (study, live, work), consider supporting so I can keep improving the site and creating new features.",
+                livepixButton: "LivePix - Support the Creator",
+                myNetworksTitle: "My networks",
+                aboutRadioMCTitle: "About RadioMC",
+                aboutRadioMCText: "RadioMC was created to be a simple, fast and complete player: you can use your own local songs + thousands of radios from around the world, in many languages. All directly from the browser, with no installation.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Electronic",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Classical",
@@ -815,6 +926,14 @@
                 connecting: "Conectando...",
                 loadMore: "Cargar 100 Radios Más",
                 totalRadios: "Total",
+                creatorTabTitle: "Creador",
+                creatorIntro: "Este proyecto fue creado por @GatosMias. Aquí encuentras mis redes, formas de apoyo y un poco más sobre RadioMC.",
+                supportProjectTitle: "Apoya el proyecto",
+                supportProjectText: "Si RadioMC te ayuda en el día a día (estudio, directo, trabajo), considera apoyar para que pueda seguir mejorando el sitio y creando nuevas funciones.",
+                livepixButton: "LivePix - Apoyar al Creador",
+                myNetworksTitle: "Mis redes",
+                aboutRadioMCTitle: "Sobre RadioMC",
+                aboutRadioMCText: "RadioMC fue creado para ser un reproductor simple, rápido y completo: puedes usar tu propia música local + miles de radios de todo el mundo, en varios idiomas. Todo esto directamente desde el navegador, sin instalar nada.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Electrónica",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Clásica",
@@ -876,6 +995,16 @@
                 radioOnline: "🟢 En ligne",
                 radioError: "❌ Erreur de connexion",
                 connecting: "Connexion...",
+                loadMore: "Charger 100 Radios de Plus",
+                totalRadios: "Total",
+                creatorTabTitle: "Créateur",
+                creatorIntro: "Ce projet a été créé par @GatosMias. Ici vous trouvez mes réseaux, moyens de soutien et un peu plus sur RadioMC.",
+                supportProjectTitle: "Soutenir le projet",
+                supportProjectText: "Si RadioMC vous aide au quotidien (étude, live, travail), pensez à soutenir pour que je puisse continuer à améliorer le site et ajouter de nouvelles fonctions.",
+                livepixButton: "LivePix - Soutenir le Créateur",
+                myNetworksTitle: "Mes réseaux",
+                aboutRadioMCTitle: "À propos de RadioMC",
+                aboutRadioMCText: "RadioMC a été créé pour être un lecteur simple, rapide et complet : vous pouvez utiliser votre propre musique locale + des milliers de radios du monde entier, dans plusieurs langues. Tout cela directement depuis le navigateur, sans rien installer.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Électronique",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Classique",
@@ -937,6 +1066,16 @@
                 radioOnline: "🟢 Online",
                 radioError: "❌ Verbindungsfehler",
                 connecting: "Verbinden...",
+                loadMore: "100 Weitere Radios Laden",
+                totalRadios: "Gesamt",
+                creatorTabTitle: "Ersteller",
+                creatorIntro: "Dieses Projekt wurde von @GatosMias erstellt. Hier findest du meine Netzwerke, Unterstützungsmöglichkeiten und mehr über RadioMC.",
+                supportProjectTitle: "Projekt unterstützen",
+                supportProjectText: "Wenn dir RadioMC im Alltag hilft (Lernen, Live, Arbeit), überlege zu unterstützen, damit ich die Seite weiter verbessern und neue Funktionen entwickeln kann.",
+                livepixButton: "LivePix - Entwickler unterstützen",
+                myNetworksTitle: "Meine Netzwerke",
+                aboutRadioMCTitle: "Über RadioMC",
+                aboutRadioMCText: "RadioMC wurde entwickelt, um ein einfacher, schneller und vollständiger Player zu sein: Du kannst deine eigenen lokalen Songs + tausende Radios aus der ganzen Welt in vielen Sprachen verwenden. Alles direkt im Browser, ohne Installation.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elektronisch",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Klassik",
@@ -998,6 +1137,16 @@
                 radioOnline: "🟢 Online",
                 radioError: "❌ Errore connessione",
                 connecting: "Connessione...",
+                loadMore: "Carica Altre 100 Radio",
+                totalRadios: "Totale",
+                creatorTabTitle: "Creatore",
+                creatorIntro: "Questo progetto è stato creato da @GatosMias. Qui trovi i miei social, i modi per supportare e qualcosa in più su RadioMC.",
+                supportProjectTitle: "Supporta il progetto",
+                supportProjectText: "Se RadioMC ti aiuta nella vita quotidiana (studio, live, lavoro), considera di supportare così posso continuare a migliorare il sito e creare nuove funzioni.",
+                livepixButton: "LivePix - Supporta il Creatore",
+                myNetworksTitle: "I miei social",
+                aboutRadioMCTitle: "Su RadioMC",
+                aboutRadioMCText: "RadioMC è stato creato per essere un player semplice, veloce e completo: puoi usare la tua musica locale + migliaia di radio da tutto il mondo, in diverse lingue. Tutto direttamente dal browser, senza installare nulla.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elettronica",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Classica",
@@ -1059,6 +1208,15 @@
                 radioOnline: "🟢 オンライン",
                 radioError: "❌ 接続エラー",
                 connecting: "接続中...",
+                loadMore: "さらに100局読み込む",
+                creatorTabTitle: "クリエイター",
+                creatorIntro: "このプロジェクトは@GatosMiasが作成しました。ここでは私のSNS、サポート方法、RadioMCについての情報をご覧いただけます。",
+                supportProjectTitle: "プロジェクトを支援",
+                supportProjectText: "RadioMCがあなたの日常（勉強、配信、仕事）に役立つなら、サイトの改善と新機能の開発を続けられるようサポートをご検討ください。",
+                livepixButton: "LivePix - クリエイターを支援",
+                myNetworksTitle: "私のSNS",
+                aboutRadioMCTitle: "RadioMCについて",
+                aboutRadioMCText: "RadioMCはシンプルで高速、完全なプレーヤーとして作られました：あなた自身のローカル音楽＋世界中の何千ものラジオを、複数の言語で使用できます。インストール不要で、ブラウザから直接利用できます。",
                 genres: {
                     pop: "ポップ", rock: "ロック", "hip hop": "ヒップホップ", electronic: "エレクトロニック",
                     dance: "ダンス", house: "ハウス", jazz: "ジャズ", classical: "クラシック",
@@ -1120,6 +1278,15 @@
                 radioOnline: "🟢 온라인",
                 radioError: "❌ 연결 오류",
                 connecting: "연결 중...",
+                loadMore: "라디오 100개 더 불러오기",
+                creatorTabTitle: "크리에이터",
+                creatorIntro: "이 프로젝트는 @GatosMias가 만들었습니다. 여기에서 소셜 미디어, 후원 방법 및 RadioMC에 대한 정보를 확인할 수 있습니다.",
+                supportProjectTitle: "프로젝트 지원",
+                supportProjectText: "RadioMC가 일상(공부, 라이브, 업무)에 도움이 된다면, 사이트 개선과 새 기능 개발을 위해 후원해 주세요.",
+                livepixButton: "LivePix - 크리에이터 후원",
+                myNetworksTitle: "소셜 미디어",
+                aboutRadioMCTitle: "RadioMC 소개",
+                aboutRadioMCText: "RadioMC는 간단하고 빠르며 완벽한 플레이어입니다. 로컬 음악과 전 세계 수천 개의 라디오를 여러 언어로 사용할 수 있습니다. 설치 없이 브라우저에서 바로 사용하세요.",
                 genres: {
                     pop: "팝", rock: "록", "hip hop": "힙합", electronic: "일렉트로닉",
                     dance: "댄스", house: "하우스", jazz: "재즈", classical: "클래식",
@@ -1181,6 +1348,15 @@
                 radioOnline: "🟢 在线",
                 radioError: "❌ 连接错误",
                 connecting: "连接中...",
+                loadMore: "加载更多100个电台",
+                creatorTabTitle: "创作者",
+                creatorIntro: "这个项目由@GatosMias创建。在这里您可以找到我的社交网络、支持方式以及关于RadioMC的更多信息。",
+                supportProjectTitle: "支持项目",
+                supportProjectText: "如果RadioMC在日常生活（学习、直播、工作）中对您有帮助，请考虑支持，以便我能继续改进网站并创建新功能。",
+                livepixButton: "LivePix - 支持创作者",
+                myNetworksTitle: "我的社交网络",
+                aboutRadioMCTitle: "关于RadioMC",
+                aboutRadioMCText: "RadioMC旨在成为一个简单、快速且完整的播放器：您可以使用自己的本地音乐+来自世界各地的数千个电台，支持多种语言。所有这些都直接在浏览器中进行，无需安装。",
                 genres: {
                     pop: "流行", rock: "摇滚", "hip hop": "嘻哈", electronic: "电子",
                     dance: "舞曲", house: "浩室", jazz: "爵士", classical: "古典",
@@ -1242,6 +1418,16 @@
                 radioOnline: "🟢 Онлайн",
                 radioError: "❌ Ошибка соединения",
                 connecting: "Подключение...",
+                loadMore: "Загрузить еще 100 радио",
+                totalRadios: "Всего",
+                creatorTabTitle: "Создатель",
+                creatorIntro: "Этот проект создан @GatosMias. Здесь вы найдете мои соцсети, способы поддержки и информацию о RadioMC.",
+                supportProjectTitle: "Поддержать проект",
+                supportProjectText: "Если RadioMC помогает вам в повседневной жизни (учеба, стрим, работа), подумайте о поддержке, чтобы я мог продолжать улучшать сайт и создавать новые функции.",
+                livepixButton: "LivePix - Поддержать автора",
+                myNetworksTitle: "Мои сети",
+                aboutRadioMCTitle: "О RadioMC",
+                aboutRadioMCText: "RadioMC создан как простой, быстрый и полный плеер: вы можете использовать свою локальную музыку + тысячи радиостанций со всего мира на разных языках. Всё это прямо в браузере, без установки.",
                 genres: {
                     pop: "Поп", rock: "Рок", "hip hop": "Хип-Хоп", electronic: "Электронная",
                     dance: "Дэнс", house: "Хаус", jazz: "Джаз", classical: "Классика",
@@ -1303,6 +1489,16 @@
                 radioOnline: "🟢 متصل",
                 radioError: "❌ خطأ في الاتصال",
                 connecting: "...جاري الاتصال",
+                loadMore: "تحميل 100 راديو إضافي",
+                totalRadios: "المجموع",
+                creatorTabTitle: "المبتكر",
+                creatorIntro: "تم إنشاء هذا المشروع بواسطة @GatosMias. ستجد هنا شبكاتي وطرق الدعم والمزيد حول RadioMC.",
+                supportProjectTitle: "دعم المشروع",
+                supportProjectText: "إذا كان RadioMC يساعدك في حياتك اليومية (الدراسة، البث المباشر، العمل)، ففكر في الدعم حتى أتمكن من الاستمرار في تحسين الموقع وإنشاء ميزات جديدة.",
+                livepixButton: "LivePix - دعم المبتكر",
+                myNetworksTitle: "شبكاتي",
+                aboutRadioMCTitle: "عن RadioMC",
+                aboutRadioMCText: "تم إنشاء RadioMC ليكون مشغلاً بسيطًا وسريعًا وكاملاً: يمكنك استخدام الموسيقى المحلية الخاصة بك + آلاف أجهزة الراديو من جميع أنحاء العالم، بعدة لغات. كل هذا مباشرة من المتصفح، دون تثبيت أي شيء.",
                 genres: {
                     pop: "بوب", rock: "روك", "hip hop": "هيب هوب", electronic: "إلكترونية",
                     dance: "رقص", house: "هاوس", jazz: "جاز", classical: "كلاسيكية",
@@ -1364,6 +1560,16 @@
                 radioOnline: "🟢 ऑनलाइन",
                 radioError: "❌ कनेक्शन त्रुटि",
                 connecting: "कनेक्ट हो रहा है...",
+                loadMore: "100 और रेडियो लोड करें",
+                totalRadios: "कुल",
+                creatorTabTitle: "निर्माता",
+                creatorIntro: "यह प्रोजेक्ट @GatosMias द्वारा बनाया गया था। यहाँ आप मेरे नेटवर्क, समर्थन के तरीके और RadioMC के बारे में कुछ और पा सकते हैं।",
+                supportProjectTitle: "प्रोजेक्ट का समर्थन करें",
+                supportProjectText: "यदि RadioMC आपके दैनिक जीवन (पढ़ाई, लाइव, काम) में आपकी मदद करता है, तो समर्थन करने पर विचार करें ताकि मैं साइट को बेहतर बनाना और नई सुविधाएँ बनाना जारी रख सकूँ।",
+                livepixButton: "LivePix - निर्माता का समर्थन करें",
+                myNetworksTitle: "मेरे नेटवर्क",
+                aboutRadioMCTitle: "RadioMC के बारे में",
+                aboutRadioMCText: "RadioMC को एक सरल, तेज़ और पूर्ण प्लेयर बनाने के लिए बनाया गया था: आप अपने स्वयं के स्थानीय संगीत + दुनिया भर के हजारों रेडियो का उपयोग कई भाषाओं में कर सकते हैं। यह सब सीधे ब्राउज़र से, बिना किसी इंस्टॉलेशन के।",
                 genres: {
                     pop: "पॉप", rock: "रॉक", "hip hop": "हिप-हॉप", electronic: "इलेक्ट्रॉनिक",
                     dance: "डांस", house: "हाउस", jazz: "जैज़", classical: "शास्त्रीय",
@@ -1425,6 +1631,16 @@
                 radioOnline: "🟢 Çevrimiçi",
                 radioError: "❌ Bağlantı hatası",
                 connecting: "Bağlanıyor...",
+                loadMore: "100 Radyo Daha Yükle",
+                totalRadios: "Toplam",
+                creatorTabTitle: "Yapımcı",
+                creatorIntro: "Bu proje @GatosMias tarafından oluşturuldu. Burada ağlarımı, destek yollarını ve RadioMC hakkında biraz daha fazlasını bulabilirsiniz.",
+                supportProjectTitle: "Projeyi destekle",
+                supportProjectText: "RadioMC günlük yaşamınızda (ders çalışma, canlı yayın, iş) size yardımcı oluyorsa, siteyi geliştirmeye ve yeni özellikler oluşturmaya devam edebilmem için destek olmayı düşünün.",
+                livepixButton: "LivePix - Yapımcıyı Destekle",
+                myNetworksTitle: "Ağlarım",
+                aboutRadioMCTitle: "RadioMC Hakkında",
+                aboutRadioMCText: "RadioMC basit, hızlı ve eksiksiz bir oynatıcı olacak şekilde oluşturuldu: kendi yerel müziğinizi + dünyanın her yerinden binlerce radyoyu birçok dilde kullanabilirsiniz. Tüm bunlar doğrudan tarayıcıdan, hiçbir şey yüklemeden.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elektronik",
                     dance: "Dans", house: "House", jazz: "Caz", classical: "Klasik",
@@ -1486,6 +1702,16 @@
                 radioOnline: "🟢 Online",
                 radioError: "❌ Błąd połączenia",
                 connecting: "Łączenie...",
+                loadMore: "Załaduj 100 więcej stacji",
+                totalRadios: "Razem",
+                creatorTabTitle: "Twórca",
+                creatorIntro: "Ten projekt został stworzony przez @GatosMias. Tutaj znajdziesz moje sieci, sposoby wsparcia i trochę więcej o RadioMC.",
+                supportProjectTitle: "Wesprzyj projekt",
+                supportProjectText: "Jeśli RadioMC pomaga Ci w codziennym życiu (nauka, live, praca), rozważ wsparcie, abym mógł nadal ulepszać stronę i tworzyć nowe funkcje.",
+                livepixButton: "LivePix - Wesprzyj Twórcę",
+                myNetworksTitle: "Moje sieci",
+                aboutRadioMCTitle: "O RadioMC",
+                aboutRadioMCText: "RadioMC powstało jako prosty, szybki i kompletny odtwarzacz: możesz używać własnej muzyki lokalnej + tysięcy stacji radiowych z całego świata, w wielu językach. Wszystko to bezpośrednio z przeglądarki, bez instalowania czegokolwiek.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elektronika",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Klasyczna",
@@ -1547,6 +1773,16 @@
                 radioOnline: "🟢 Online",
                 radioError: "❌ Verbindingsfout",
                 connecting: "Verbinden...",
+                loadMore: "Laad nog 100 radio's",
+                totalRadios: "Totaal",
+                creatorTabTitle: "Maker",
+                creatorIntro: "Dit project is gemaakt door @GatosMias. Hier vind je mijn netwerken, manieren om te steunen en wat meer over RadioMC.",
+                supportProjectTitle: "Steun het project",
+                supportProjectText: "Als RadioMC je helpt in je dagelijks leven (studie, live, werk), overweeg dan om te steunen zodat ik de site kan blijven verbeteren en nieuwe functies kan creëren.",
+                livepixButton: "LivePix - Steun de Maker",
+                myNetworksTitle: "Mijn netwerken",
+                aboutRadioMCTitle: "Over RadioMC",
+                aboutRadioMCText: "RadioMC is gemaakt om een eenvoudige, snelle en complete speler te zijn: je kunt je eigen lokale muziek + duizenden radio's van over de hele wereld gebruiken, in vele talen. Alles direct vanuit de browser, zonder iets te installeren.",
                 genres: {
                     pop: "Pop", rock: "Rock", "hip hop": "Hip-Hop", electronic: "Elektronisch",
                     dance: "Dance", house: "House", jazz: "Jazz", classical: "Klassiek",
@@ -1608,6 +1844,16 @@
                 radioOnline: "🟢 ออนไลน์",
                 radioError: "❌ ข้อผิดพลาดการเชื่อมต่อ",
                 connecting: "กำลังเชื่อมต่อ...",
+                loadMore: "โหลดวิทยุเพิ่ม 100 สถานี",
+                totalRadios: "ทั้งหมด",
+                creatorTabTitle: "ผู้สร้าง",
+                creatorIntro: "โปรเจกต์นี้สร้างโดย @GatosMias ที่นี่คุณจะพบเครือข่ายของฉัน วิธีการสนับสนุน และข้อมูลเพิ่มเติมเกี่ยวกับ RadioMC",
+                supportProjectTitle: "สนับสนุนโปรเจกต์",
+                supportProjectText: "หาก RadioMC ช่วยคุณในชีวิตประจำวัน (การเรียน ไลฟ์สด งาน) โปรดพิจารณาสนับสนุนเพื่อให้ฉันสามารถปรับปรุงเว็บไซต์และสร้างฟีเจอร์ใหม่ๆ ต่อไปได้",
+                livepixButton: "LivePix - สนับสนุนผู้สร้าง",
+                myNetworksTitle: "เครือข่ายของฉัน",
+                aboutRadioMCTitle: "เกี่ยวกับ RadioMC",
+                aboutRadioMCText: "RadioMC ถูกสร้างขึ้นเพื่อเป็นเครื่องเล่นที่เรียบง่าย รวดเร็ว และครบครัน: คุณสามารถใช้เพลงท้องถิ่นของคุณเอง + วิทยุหลายพันแห่งจากทั่วโลกในหลายภาษา ทั้งหมดนี้โดยตรงจากเบราว์เซอร์โดยไม่ต้องติดตั้งอะไรเลย",
                 genres: {
                     pop: "ป๊อป", rock: "ร็อค", "hip hop": "ฮิปฮอป", electronic: "อิเล็กทรอนิก",
                     dance: "แดนซ์", house: "เฮาส์", jazz: "แจ๊ส", classical: "คลาสสิก",
@@ -1688,12 +1934,13 @@
         let repeatMode = 'all';
         let currentBlobUrl = null;
         let lastVolume = 80;
-        let currentTab = 'library';
+        let currentTab = 'radios';
         let currentGenre = '';
         let searchTimeout = null;
         let offlineRadios = new Set();
 
         const audio = document.getElementById('audioPlayer');
+        const COUNTRY_STORAGE_KEY = 'radiomc_country';
 
         // =============================================
         // INICIALIZAÇÃO
@@ -1709,6 +1956,8 @@
                 loadSettings();
                 updateVolume();
                 loadRadios();
+                // Abre sempre na aba de Rádios Online ao iniciar
+                switchTab('radios');
                 showToast(t('ready'), 'success');
             } catch (error) {
                 console.error('Erro:', error);
@@ -1919,12 +2168,24 @@
         // =============================================
         function switchTab(tab) {
             currentTab = tab;
+            // Conteúdo
             document.getElementById('libraryTab').classList.toggle('hidden', tab !== 'library');
             document.getElementById('radiosTab').classList.toggle('hidden', tab !== 'radios');
+            const creatorEl = document.getElementById('creatorTab');
+            if (creatorEl) creatorEl.classList.toggle('hidden', tab !== 'creator');
+            // Botões das abas
             document.getElementById('tabLibrary').classList.toggle('active', tab === 'library');
             document.getElementById('tabRadios').classList.toggle('active', tab === 'radios');
+            const tabCreatorBtn = document.getElementById('tabCreator');
+            if (tabCreatorBtn) tabCreatorBtn.classList.toggle('active', tab === 'creator');
+            // Mostrar/ocultar player na aba Criador
+            const playerCol = document.getElementById('playerColumn');
+            if (playerCol) playerCol.classList.toggle('hidden', tab === 'creator');
+            // Barra de progresso: esconde só quando estiver em rádios e uma rádio estiver tocando
             document.getElementById('progressContainer').classList.toggle('hidden', tab === 'radios' && currentRadio);
         }
+
+
 
         // =============================================
         // UPLOAD DE MÚSICAS
@@ -2210,6 +2471,8 @@
                             .then(() => {
                                 // Sucesso
                                 if (currentRadio && currentRadio.stationuuid === thisRadioId) {
+                                    // Se ela estava marcada como offline antes, marca como online de novo
+                                    offlineRadios.delete(thisRadioId);
                                     updateNowPlaying(radio.name, radio.country || 'Rádio Online');
                                     showLiveIndicator(true);
                                     updateRadioInfo(radio);
@@ -2320,6 +2583,10 @@
             currentIndex = index;
             currentRadio = null;
             hideRadioStatus();
+            // Ao voltar para música local, garante que o vídeo e o botão sejam escondidos
+            if (typeof checkVideoSupport === 'function') {
+                checkVideoSupport();
+            }
 
             const url = createBlobUrl(music);
             if (!url) return;
@@ -2592,6 +2859,13 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // =============================================
+        // VÍDEO DA RÁDIO - DESATIVADO
+        // =============================================
+        function checkVideoSupport() {
+            // Vídeo desativado - função mantida para compatibilidade
         }
 
         window.onbeforeunload = () => { if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl); };
